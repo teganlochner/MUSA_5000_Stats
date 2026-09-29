@@ -1,0 +1,155 @@
+---
+title: "Assignment 1"
+output: html_document
+---
+
+# variables 
+POLY_ID : Census Block Group ID
+MEDHVAL : Median value of all ownder occupied housing units
+PCTBACHMOR : Proportion of residents in Block Group with at least a bachelor's degree
+PCTVACANT : Proportion of housing units that are vacant
+PCTSINGLES : Percent of housing units that are detached single family houses
+NBELPOV100: Number of households with incomes below 100% poverty level (i.e., number of households living in poverty)
+MEDHHINC : Median household income
+
+```{r}
+# load data and data frame
+
+regression_data <- read.csv("RegressionData.csv")
+attach(regression_data)
+```
+
+```{r}
+# calculate summary statistics for MEDHVAL
+
+hist(MEDHVAL)
+mean(MEDHVAL)
+sd(MEDHVAL)
+```
+```{r}
+# calculate summary statistics for PCTBACHMOR
+
+hist(PCTBACHMOR)
+mean(PCTBACHMOR)
+sd(PCTBACHMOR)
+```
+
+```{r}
+# calculate summary statistics for NBELPOV100
+
+hist(NBELPOV100)
+mean(NBELPOV100)
+sd(NBELPOV100)
+```
+
+```{r}
+# calculate summary statistics for PCTVACANT
+
+hist(PCTVACANT)
+mean(PCTVACANT)
+sd(PCTVACANT)
+```
+
+```{r}
+# calculate summary statistics for PCTSINGLES
+
+hist(PCTSINGLES)
+mean(PCTSINGLES)
+sd(PCTSINGLES)
+```
+
+```{r}
+# create summary table
+
+summary_table <- data.frame(
+  Variable = c(
+    "Dependent Variable",
+    "MEDHVAL",
+    "Predictors",
+    "PCTBACHMOR",
+    "MEDHHINC",
+    "PCTVACANT",
+    "PCTSINGLES",
+    "NBELPOV100"
+  ),
+  Mean = c(
+    NA,
+    mean(MEDHVAL, na.rm = TRUE),
+    NA,
+    mean(PCTBACHMOR, na.rm = TRUE),
+    mean(MEDHHINC, na.rm = TRUE),
+    mean(PCTVACANT, na.rm = TRUE),
+    mean(PCTSINGLES, na.rm = TRUE),
+    mean(NBELPOV100, na.rm = TRUE)
+  ),
+  SD = c(
+    NA,
+    sd(MEDHVAL, na.rm = TRUE),
+    NA,
+    sd(PCTBACHMOR, na.rm = TRUE),
+    sd(MEDHHINC, na.rm = TRUE),
+    sd(PCTVACANT, na.rm = TRUE),
+    sd(PCTSINGLES, na.rm = TRUE),
+    sd(NBELPOV100, na.rm = TRUE)
+  )
+)
+
+summary_table
+```
+```{r}
+# check if any of the data have any zero values
+
+sapply(regression_data[c("MEDHVAL", "PCTBACHMOR",
+                         "PCTVACANT", "PCTSINGLES", "NBELPOV100")],
+       function(x) sum(x == 0, na.rm = TRUE))
+```
+
+```{r}
+# use the log command to create 5 new variables 
+
+LNMEDHVAL <- log(MEDHVAL)
+LNPCTBACHMOR <- log(1+PCTBACHMOR)
+LNNBELPOV100 <- log(1+NBELPOV100)
+LNPCTVACANT <- log(1+PCTVACANT)
+LNPCTSINGLES <- log(1+PCTSINGLES)
+```
+
+```{r}
+# view the histograms of the new variables 
+
+hist(LNMEDHVAL)
+hist(LNPCTBACHMOR)
+hist(LNNBELPOV100)
+hist(LNPCTVACANT)
+hist(LNPCTSINGLES)
+```
+Note that the dependent variable does look more or less normal
+after the transformation – hence, LNMEDHVAL will be used as
+the dependent variable in the regression analysis. You will also
+see that for the predictors, the logarithmic transformation only
+helps normalize the NBELPOV100 variable (so we will use
+LNNBELPOV100 in the subsequent analyses). The other
+variables have a large spike at zero (i.e., zero-inflated
+distributions) after the transformations, so we will use the
+original, untransformed PCBACHMORE, PCTVACANT, and
+PCTSINGLES variables in the regression
+
+```{r}
+# determine if the relationship between the dependent variables and each of the predictors is linear, create four scatter plots
+
+plot(LNMEDHVAL,LNNBELPOV100)
+plot(LNMEDHVAL,PCTBACHMOR)
+plot(LNMEDHVAL,PCTVACANT)
+plot(LNMEDHVAL,PCTSINGLES)
+```
+
+```{r}
+# check the Pearson correlations between all of the predictors
+
+cor(cbind(PCTVACANT, PCTSINGLES, PCTBACHMOR, LNNBELPOV100))
+```
+Note whether you observe severe multicollinearity, and whether it’s appropriate to include all 4 variables as predictors.
+
+None of the variables show severe multicollinearity. The most severe result is -0.3197668 which is not severe?
+
+
