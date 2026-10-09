@@ -171,14 +171,14 @@ None of the variables show severe multicollinearity. The most severe result is -
 ```{r}
 # import the shape file
 
-regression_data <- st_read("RegressionDataFiles.shp")
+regression_data_shp <- st_read("RegressionDataFiles.shp")
 ```
 ```{r}
 # create the map for LNMEDHVAL 
 
 tmap_mode("plot")
 
-map1 <- tm_shape(regression_data) +
+map1 <- tm_shape(regression_data_shp) +
   tm_polygons(
     fill = "LNMEDHVAL",
     fill.scale = tm_scale_intervals(
@@ -199,7 +199,7 @@ map1
 ```{r}
 # create the predictor maps
 
-map2 <- tm_shape(regression_data) +
+map2 <- tm_shape(regression_data_shp) +
   tm_polygons(
     fill = "PCTVACANT",
     fill.scale = tm_scale_intervals(
@@ -212,7 +212,7 @@ map2 <- tm_shape(regression_data) +
   ) +
   tm_title("Percent Vacant")
 
-map3 <- tm_shape(regression_data) +
+map3 <- tm_shape(regression_data_shp) +
   tm_polygons(
     fill = "PCTSINGLES",
     fill.scale = tm_scale_intervals(
@@ -225,7 +225,7 @@ map3 <- tm_shape(regression_data) +
   ) +
   tm_title("Percent Single-Family")
 
-map4 <- tm_shape(regression_data) +
+map4 <- tm_shape(regression_data_shp) +
   tm_polygons(
     fill = "PCTBACHMOR",
     fill.scale = tm_scale_intervals(
@@ -238,8 +238,8 @@ map4 <- tm_shape(regression_data) +
   ) +
   tm_title("Percent Bachelor's Degree or Higher")
 
-regression_data$LNNBELPOV100 <- LNNBELPOV100
-map5 <- tm_shape(regression_data) +
+regression_data_shp$LNNBELPOV100 <- LNNBELPOV100
+map5 <- tm_shape(regression_data_shp) +
   tm_polygons(
     fill = "LNNBELPOV100",
     fill.scale = tm_scale_intervals(
@@ -350,12 +350,59 @@ The stepwise regression procedure using the Akaike Information Criterion (AIC) s
 
 ```{r}
 # k fold validation 
-
+regression_data$LNNBELPOV100 <- LNNBELPOV100
 cv1 <- CVlm(
   data = regression_data,
-  regression,
+  form.lm = formula(regression),
   m = 5,
+  plotit = FALSE
 )
+
+# format
+# Create plot data
+plot_data <- data.frame(
+  Observed = cv1$LNMEDHVAL,
+  Predicted = cv1$cvpred,
+  Fold = factor(cv1$fold)
+)
+
+# Assign a different color to each fold
+fold_colors <- c("steelblue", "tomato", "forestgreen", "orange", "purple")
+
+# Leave space on the right for the legend
+par(mar = c(5, 5, 4, 10), xpd = TRUE)
+
+# Plot observed versus predicted values
+plot(
+  plot_data$Observed,
+  plot_data$Predicted,
+  pch = 16,
+  cex = 0.6,
+  col = fold_colors[as.numeric(plot_data$Fold)],
+  xlab = "Observed log median housing value",
+  ylab = "Cross-validated predicted value",
+  main = "5-Fold Cross-Validation",
+  bty = "l"
+)
+
+# Reference line for perfect predictions
+abline(0, 1, lty = 2, lwd = 2, col = "gray40")
+
+# Legend on the right
+legend(
+  "topright",
+  inset = c(-0.65, 0),
+  legend = c(paste("Fold", 1:5), "Perfect prediction"),
+  col = c(fold_colors, "gray40"),
+  pch = c(rep(16, 5), NA),
+  lty = c(rep(NA, 5), 2),
+  lwd = c(rep(NA, 5), 2),
+  bty = "n",
+  cex = 0.8
+)
+
+par(xpd = FALSE)
+
 
 rmse1 <- sqrt(mean(
   (cv1$LNMEDHVAL - cv1$cvpred)^2,
@@ -363,5 +410,101 @@ rmse1 <- sqrt(mean(
 ))
 
 rmse1
+```
+
+```{r}
+# second cross validation 
+
+# Create the second regression model with only two predictors
+regression2 <- lm(
+  LNMEDHVAL ~ PCTVACANT + MEDHHINC,
+  data = regression_data
+)
+
+# Run 5-fold cross-validation
+cv2 <- CVlm(
+  data = regression_data,
+  form.lm = formula(regression2),
+  m = 5,
+  plotit = FALSE
+)
+
+# Format the cross-validation results
+plot_data <- data.frame(
+  Observed = cv2$LNMEDHVAL,
+  Predicted = cv2$cvpred,
+  Fold = factor(cv2$fold)
+)
+
+# Assign a different color to each fold
+fold_colors <- c("steelblue", "tomato", "forestgreen", "orange", "purple")
+
+# Leave space on the right for the legend
+par(mar = c(5, 5, 4, 10), xpd = TRUE)
+
+# Plot observed versus predicted values
+plot(
+  plot_data$Observed,
+  plot_data$Predicted,
+  pch = 16,
+  cex = 0.6,
+  col = fold_colors[as.numeric(plot_data$Fold)],
+  xlab = "Observed log median housing value",
+  ylab = "Cross-validated predicted value",
+  main = "5-Fold Cross-Validation: PCTVACANT + MEDHHINC",
+  bty = "l"
+)
+
+# Reference line for perfect predictions
+abline(0, 1, lty = 2, lwd = 2, col = "gray40")
+
+# Legend on the right
+legend(
+  "topright",
+  inset = c(-0.65, 0),
+  legend = c(paste("Fold", 1:5), "Perfect prediction"),
+  col = c(fold_colors, "gray40"),
+  pch = c(rep(16, 5), NA),
+  lty = c(rep(NA, 5), 2),
+  lwd = c(rep(NA, 5), 2),
+  bty = "n",
+  cex = 0.8
+)
+
+par(xpd = FALSE)
+
+# Calculate RMSE
+rmse2 <- sqrt(mean(
+  (cv2$LNMEDHVAL - cv2$cvpred)^2,
+  na.rm = TRUE
+))
+
+rmse2
+```
+
+cross validation 1 RMSE: 0.3664401
+cross validation 2 RMSE: 0.4427216
+
+```{r}
+hist(regression_standardresiduals)
+```
+
+```{r}
+regression_data_shp$regression_standardresiduals <-
+  rstandard(regression)
+map6 <- tm_shape(regression_data_shp) +
+  tm_polygons(
+    fill = "regression_standardresiduals",
+    fill.scale = tm_scale_intervals(
+      style = "quantile", n = 4, values = "viridis"
+    ),
+    fill.legend = tm_legend(
+      title = "Standardized Regression Residuals"
+      ),
+    lwd = 0.1
+  ) +
+  tm_title("Standardized Regression Residuals")
+
+map6
 ```
 
