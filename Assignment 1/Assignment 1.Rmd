@@ -507,4 +507,24 @@ map6 <- tm_shape(regression_data_shp) +
 
 map6
 ```
+## REPORT - Draft by Wednesday, Submit Friday 
+
+## INTRODUCTION (Sara)
+
+## METHODS (Gautami)
+# Data Cleaning
+# Exploratory Data Analysis
+# Multiple Regression Analysis 
+# Additional Analysis 
+# Software
+
+## RESULTS (Tegan)
+# Exploratory Results
+# Regression Results
+# Regression Assumption Checks
+# Additional Models
+
+## DISCUSSION & LIMITATIONS (Sara)
+
+
 
