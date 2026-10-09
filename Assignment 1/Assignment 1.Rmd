@@ -11,6 +11,22 @@ PCTVACANT : Proportion of housing units that are vacant
 PCTSINGLES : Percent of housing units that are detached single family houses
 NBELPOV100: Number of households with incomes below 100% poverty level (i.e., number of households living in poverty)
 MEDHHINC : Median household income
+```{r}
+library(Hmisc)
+library(DAAG)
+library(car)  #to calculate VIF
+library(MASS)
+library(rsq)
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(sf)
+library(terra)
+library(tmap)
+
+install.packages(c("sf", "terra"))
+install.packages("tmap")
+```
 
 ```{r}
 # load data and data frame
@@ -150,6 +166,202 @@ cor(cbind(PCTVACANT, PCTSINGLES, PCTBACHMOR, LNNBELPOV100))
 ```
 Note whether you observe severe multicollinearity, and whether it’s appropriate to include all 4 variables as predictors.
 
-None of the variables show severe multicollinearity. The most severe result is -0.3197668 which is not severe?
+None of the variables show severe multicollinearity. The most severe result is -0.3197668. 
 
+```{r}
+# import the shape file
+
+regression_data <- st_read("RegressionDataFiles.shp")
+```
+```{r}
+# create the map for LNMEDHVAL 
+
+tmap_mode("plot")
+
+map1 <- tm_shape(regression_data) +
+  tm_polygons(
+    fill = "LNMEDHVAL",
+    fill.scale = tm_scale_intervals(
+      style = "quantile",
+      n = 4,
+      values = "viridis"
+    ),
+    fill.legend = tm_legend(
+      title = "Log Median Housing Value"
+      ),
+    lwd = 0.2
+  ) +
+  tm_title("Log Median Housing Value") +
+  tm_layout(legend.outside = TRUE)
+
+map1
+```
+```{r}
+# create the predictor maps
+
+map2 <- tm_shape(regression_data) +
+  tm_polygons(
+    fill = "PCTVACANT",
+    fill.scale = tm_scale_intervals(
+      style = "quantile", n = 4, values = "viridis"
+    ),
+    fill.legend = tm_legend(
+      title = "Vacant Housing"
+      ),
+    lwd = 0.1
+  ) +
+  tm_title("Percent Vacant")
+
+map3 <- tm_shape(regression_data) +
+  tm_polygons(
+    fill = "PCTSINGLES",
+    fill.scale = tm_scale_intervals(
+      style = "quantile", n = 4, values = "viridis"
+    ),
+    fill.legend = tm_legend(
+      title = "Single-Family Housing"
+      ),
+    lwd = 0.1
+  ) +
+  tm_title("Percent Single-Family")
+
+map4 <- tm_shape(regression_data) +
+  tm_polygons(
+    fill = "PCTBACHMOR",
+    fill.scale = tm_scale_intervals(
+      style = "quantile", n = 4, values = "viridis"
+    ),
+    fill.legend = tm_legend(
+      title = "Bachelor's Degree or Higher"
+      ),
+    lwd = 0.1
+  ) +
+  tm_title("Percent Bachelor's Degree or Higher")
+
+regression_data$LNNBELPOV100 <- LNNBELPOV100
+map5 <- tm_shape(regression_data) +
+  tm_polygons(
+    fill = "LNNBELPOV100",
+    fill.scale = tm_scale_intervals(
+      style = "quantile", n = 4, values = "viridis"
+    ),
+    fill.legend = tm_legend(
+      title = "Log Households Below Poverty"
+      ),
+    lwd = 0.1
+  ) +
+  tm_title("Log Households Below Poverty")
+
+map2
+map3
+map4
+map5
+```
+```{r}
+# create figures for the predictor maps
+
+predictor_maps <- tmap_arrange(
+  map2, map3, map4, map5,
+  ncol = 2,
+  nrow = 2
+)
+
+predictor_maps
+
+# save the figures
+
+tmap_save(
+  predictor_maps,
+  filename = "predictor_maps.png",
+  width = 10,
+  height = 8,
+  units = "in",
+  dpi = 300
+)
+
+# save LNMEDHVAL figure
+
+tmap_save(
+  map1,
+  filename = "LNMEDHVAL_map.png",
+  width = 8,
+  height = 6,
+  units = "in",
+  dpi = 300
+)
+
+```
+
+```{r}
+# regression analysis 
+
+regression <- lm(LNMEDHVAL ~ PCTVACANT + PCTSINGLES + PCTBACHMOR + LNNBELPOV100, data = regression_data)
+
+regression
+```
+
+```{r}
+# summary table
+
+summary(regression)
+```
+
+```{r}
+# ANOVA table
+
+anova(regression)
+```
+
+```{r}
+regression_predicted <- fitted(regression)
+regression_residuals <- residuals(regression)
+regression_standardresiduals <- rstandard(regression)
+
+regression_predicted
+regression_residuals
+regression_standardresiduals
+```
+
+```{r}
+# scatter plot of standardized residuals 
+
+plot(
+  regression_predicted,
+  regression_standardresiduals,
+  xlab = "Predicted Values",
+  ylab = "Standardized Residuals",
+  main = "Standardized Residuals vs. Predicted Values",
+  pch = 20
+)
+
+abline(h = 0, lty = 2, col = "red")
+```
+
+```{r}
+# stepwise regression
+
+step_regression <- stepAIC(regression, direction = "both")
+step_regression
+step_regression$anova
+AIC(step_regression)
+```
+
+The stepwise regression procedure using the Akaike Information Criterion (AIC) selected the initial model as the final model. All four predictors—PCTVACANT, PCTSINGLES, PCTBACHMOR, and LNNBELPOV100—were retained because removing any individual predictor increased the AIC. The full model had an AIC of -3448.16, the lowest among the models evaluated. Therefore, the procedure did not identify an improvement by removing any of the predictors.
+
+```{r}
+# k fold validation 
+
+cv1 <- CVlm(
+  data = regression_data,
+  regression,
+  m = 5,
+)
+
+rmse1 <- sqrt(mean(
+  (cv1$LNMEDHVAL - cv1$cvpred)^2,
+  na.rm = TRUE
+))
+
+rmse1
+```
 
