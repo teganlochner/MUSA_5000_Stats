@@ -5,13 +5,15 @@ output: html_document
 
 # variables 
 POLY_ID : Census Block Group ID
-MEDHVAL : Median value of all ownder occupied housing units
+MEDHVAL : Median value of all owner occupied housing units
 PCTBACHMOR : Proportion of residents in Block Group with at least a bachelor's degree
 PCTVACANT : Proportion of housing units that are vacant
 PCTSINGLES : Percent of housing units that are detached single family houses
 NBELPOV100: Number of households with incomes below 100% poverty level (i.e., number of households living in poverty)
 MEDHHINC : Median household income
 ```{r}
+options(scipen = 999)
+
 library(Hmisc)
 library(DAAG)
 library(car)  #to calculate VIF
@@ -510,6 +512,25 @@ map6
 ## REPORT - Draft by Wednesday, Submit Friday 
 
 ## INTRODUCTION (Sara)
+In this analysis, we examined the relationship between Philadelphia median house values and several neighborhood characteristics using census block-level data. We measured the relationship by regressing median house value on the following variables: 
+
+*Proportion of residents in Block Group with at least a bachelor’s
+
+*Proportion of housing units that are vacant
+
+*Percent of housing units that are detached single family houses
+
+*Number of households with incomes below 100% poverty level (i.e., number of households living in poverty)
+
+*Median household income
+
+The regression output tells us (rate of significance, association). A 1 unit increase is associated with an xx increase of xx (slope). The p-value for xx demonstrates that xx (for each variable). The null hypothesis is tha the predictor has not association with our dependent variable. Because our Do we fail to reject the null? 
+
+Peer-reviewed studies suggest a positive relationship between median house value and median household income, and neighborhoods with clustered college graduates (Harvard University, US Census, National Bureau of Economic Research) . We want to examine a broader set of variables and their relationship to median house value. 
+
+Historically, single-family homes are clustered in areas with higher median house value. Starting in the 1930s, racist redlining and zoning practices became commonplace across the country, with the intention of maintaining segregated neighborhoods, denying Black and brown families a path to generational wealth accumulation, and displacing historically Black and brown neighborhoods. As a result, white and wealthy neighborhoods, typically with a large concentration of single-family homes, higher rates of education, and higher median household income, were protected from harmful redevelopment such as highways bisecting communities and eminent domain of homes and businesses. Meanwhile, Black and brown communities were subject to significant displacement and deliberately denied access to homeownership and property value appreciation, the effects of which we still see today. Although race is not a variable in our model, Philadelphia’s history of redlining and Urban Renewal contributed to the economically stratified neighborhood patterns we see in this model. The history of redlining and displacement does not disaggregate race from class; in fact, these policies were racist precisely because of their targeted classism. Policies such as redlining and urban renewal were framed as economic revitalization initiatives, but in practice, they resulted in the disinvestment of Black and brown neighborhoods, making poor neighborhoods poorer and wealthy neighborhoods wealthier. The predictors we evaluate are likely related to our response variable because they stem from the same historical processes that shaped Philadelphia and much of our country.      
+
+
 
 ## METHODS (Gautami)
 # Data Cleaning
@@ -761,6 +782,20 @@ cross validation 2 RMSE: 0.4427216
 The cross validation RMSE for the original model is lower than the cross validation RMSE for the model with only two predictors which indicates that the original model is more accurate. 
 
 ## DISCUSSION & LIMITATIONS (Sara)
+
+To recap, we developed a linear regression model in which median house value was regressed on five independent variables. We attempted to determine a relationship by testing if the null hypothesis, xx, was rejected or a failure to reject… We did this through following the following steps: 
+We found the mean and standard deviation of the dependent variable and each predictor
+We plotted histograms of the dependent variable and each predictor to determine whether the variables were normally distributed. None of them were, more specifically, they were all right skewed, so we performed logarithmic transformations on each to  determine their transformed histogram shape. The logarithmic transformation helped in creating a normally distributed histogram for the dependent variable and one predictor (NBELPOV100). It did not help because they have a large spike at zero (zero-inflated distributions) so we used the original for these variables. 
+We then created scatter plots to determine if there was any severe multicollinearity. We determined no severe multicollinearity was present. 
+We then created a map of the transformed median house value and split the values into 
+
+
+The final model includes all 4 predictors. We The RMSE was xx, in the 5-fold with xx. The R^2 and adjusted R^2 were xx and xx, almost identical because xx. This tells us that we have a reasonably good model because it demonstrates that our independent variable account for xx% of the variance we see in the dependent variable?? 
+
+Using raw numbers for households living in poverty may not provide the most accurate representation of rates of poverty in Philadelphia block groups. Two very different-sized block groups can have the same raw number of households living in poverty. By using this data, we don’t see the relationship between block group size and rate of households in poverty, we would only see that two block groups have the same raw number of households in poverty. By using percentage, we would see the proportion of households living in poverty per block group. 
+
+
+It would not make sense to run a Ridge or LASSO regression here because these methods are intended to be used on models with severe multicollinearity or a proportionally high number of variables relative to the number of observations. Both methods penalize large coefficients to reduce variance and overfitting. The Ridge regression shrinks and retains every variable, which makes the model less sensitive to individual data points. The LASSO regression may shrink some variables to zero, completely dropping them from the model if they are redundant or ineffective. Because we did not see severe multicollinearity (the most severe r value was -.32) and we have 1,700 observations with only xx variables, we determined that using a Ridge or Lasso method would not be effective in making our model more predictive and may make our coefficients harder to interpret. 
 
 
 
