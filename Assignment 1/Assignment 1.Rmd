@@ -545,5 +545,19 @@ Historically, single-family homes are clustered in areas with higher median hous
 
 ## DISCUSSION & LIMITATIONS (Sara)
 
+To recap, we developed a linear regression model in which median house value was regressed on five independent variables. We attempted to determine a relationship by testing if the null hypothesis, xx, was rejected or a failure to reject… We did this through following the following steps: 
+We found the mean and standard deviation of the dependent variable and each predictor
+We plotted histograms of the dependent variable and each predictor to determine whether the variables were normally distributed. None of them were, more specifically, they were all right skewed, so we performed logarithmic transformations on each to  determine their transformed histogram shape. The logarithmic transformation helped in creating a normally distributed histogram for the dependent variable and one predictor (NBELPOV100). It did not help because they have a large spike at zero (zero-inflated distributions) so we used the original for these variables. 
+We then created scatter plots to determine if there was any severe multicollinearity. We determined no severe multicollinearity was present. 
+We then created a map of the transformed median house value and split the values into 
+
+
+The final model includes all 4 predictors. We The RMSE was xx, in the 5-fold with xx. The R^2 and adjusted R^2 were xx and xx, almost identical because xx. This tells us that we have a reasonably good model because it demonstrates that our independent variable account for xx% of the variance we see in the dependent variable?? 
+
+Using raw numbers for households living in poverty may not provide the most accurate representation of rates of poverty in Philadelphia block groups. Two very different-sized block groups can have the same raw number of households living in poverty. By using this data, we don’t see the relationship between block group size and rate of households in poverty, we would only see that two block groups have the same raw number of households in poverty. By using percentage, we would see the proportion of households living in poverty per block group. 
+
+
+It would not make sense to run a Ridge or LASSO regression here because these methods are intended to be used on models with severe multicollinearity or a proportionally high number of variables relative to the number of observations. Both methods penalize large coefficients to reduce variance and overfitting. The Ridge regression shrinks and retains every variable, which makes the model less sensitive to individual data points. The LASSO regression may shrink some variables to zero, completely dropping them from the model if they are redundant or ineffective. Because we did not see severe multicollinearity (the most severe r value was -.32) and we have 1,700 observations with only xx variables, we determined that using a Ridge or Lasso method would not be effective in making our model more predictive and may make our coefficients harder to interpret. 
+
 
 
