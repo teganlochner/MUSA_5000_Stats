@@ -5,13 +5,15 @@ output: html_document
 
 # variables 
 POLY_ID : Census Block Group ID
-MEDHVAL : Median value of all ownder occupied housing units
+MEDHVAL : Median value of all owner occupied housing units
 PCTBACHMOR : Proportion of residents in Block Group with at least a bachelor's degree
 PCTVACANT : Proportion of housing units that are vacant
 PCTSINGLES : Percent of housing units that are detached single family houses
 NBELPOV100: Number of households with incomes below 100% poverty level (i.e., number of households living in poverty)
 MEDHHINC : Median household income
 ```{r}
+options(scipen = 999)
+
 library(Hmisc)
 library(DAAG)
 library(car)  #to calculate VIF
