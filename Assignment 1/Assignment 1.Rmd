@@ -1,6 +1,15 @@
 ---
-title: "Assignment 1"
-output: html_document
+title: "Using OLS Regression to Predict Median House Values in Philadelphia"
+subtitle: "CPLN 671 / MUSA 5000: Statistics and Data Mining"
+author: "Sara Pearl Cerami, Gautami Kasat, Tegan Lochner"
+date: "October 16, 2026"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+    theme: readable
 ---
 
 # variables 
@@ -530,17 +539,242 @@ Peer-reviewed studies suggest a positive relationship between median house value
 
 Historically, single-family homes are clustered in areas with higher median house value. Starting in the 1930s, racist redlining and zoning practices became commonplace across the country, with the intention of maintaining segregated neighborhoods, denying Black and brown families a path to generational wealth accumulation, and displacing historically Black and brown neighborhoods. As a result, white and wealthy neighborhoods, typically with a large concentration of single-family homes, higher rates of education, and higher median household income, were protected from harmful redevelopment such as highways bisecting communities and eminent domain of homes and businesses. Meanwhile, Black and brown communities were subject to significant displacement and deliberately denied access to homeownership and property value appreciation, the effects of which we still see today. Although race is not a variable in our model, Philadelphia’s history of redlining and Urban Renewal contributed to the economically stratified neighborhood patterns we see in this model. The history of redlining and displacement does not disaggregate race from class; in fact, these policies were racist precisely because of their targeted classism. Policies such as redlining and urban renewal were framed as economic revitalization initiatives, but in practice, they resulted in the disinvestment of Black and brown neighborhoods, making poor neighborhoods poorer and wealthy neighborhoods wealthier. The predictors we evaluate are likely related to our response variable because they stem from the same historical processes that shaped Philadelphia and much of our country.      
 
-
-
 ## METHODS (Gautami)
-# Data Cleaning
-# Exploratory Data Analysis
-# Multiple Regression Analysis 
-# Additional Analysis 
-# Software
+
+### Data Cleaning
+
+This analysis uses 2000 Census data for Philadelphia at the block group level.
+The original dataset contained 1,816 block groups. Four categories of
+observations were removed before the data were released for analysis: block
+groups with a population below 40, block groups with no housing units, block
+groups with a median house value below \$10,000, and one North Philadelphia block
+group reporting a median house value above \$800,000 alongside a median household
+income below \$8,000. In each case the records would have produced unstable or
+implausible estimates, whether because a median drawn from very few households
+is easily distorted, because no housing market exists to measure, or because the
+reported values are inconsistent with the rest of the city.
+
+The cleaned dataset contains 1,720 block groups. No further outlier screening was
+carried out here, and all analyses that follow are based on these 1,720
+observations.
+
+### Exploratory Data Analysis
+
+#### Summary statistics and distributions
+
+Before fitting any model, we examine the summary statistics and distributions of
+the dependent variable and each predictor. For every variable we calculate the
+mean and the standard deviation, and we plot a histogram to assess the shape of
+its distribution. Where a distribution is strongly skewed, we apply a natural log
+transformation and re-examine the histogram to determine whether the transformed
+variable is better behaved than the original. Variables containing zero values
+are transformed as the natural log of one plus the variable, since the log of
+zero is undefined. We also plot the dependent variable against each predictor to
+assess whether the relationships appear linear, and we map the dependent variable
+and the predictors across the city to look for spatial patterns.
+
+#### Correlations between predictors
+
+As part of this exploratory stage we also examine the correlations between the
+predictors. A correlation measures the strength and direction of the linear
+association between two variables, that is, whether they tend to move together,
+move in opposite directions, or show no consistent linear pattern at all. The
+sample correlation coefficient $r$ can be written as the average product of the
+standardized deviations of the two variables,
+
+$$
+r = \frac{1}{n-1}\sum_{i=1}^{n}
+\left( \frac{x_{i} - \bar{x}}{s_{x}} \right)
+\left( \frac{y_{i} - \bar{y}}{s_{y}} \right)
+\tag{1}
+$$
+
+where
+
+$$
+\begin{aligned}
+r &= \text{sample correlation coefficient} \\
+n &= \text{number of observations, here the 1,720 block groups} \\
+x_{i},\, y_{i} &= \text{values of the two variables for observation } i \\
+\bar{x},\, \bar{y} &= \text{sample means of } x \text{ and } y \\
+s_{x},\, s_{y} &= \text{sample standard deviations of } x \text{ and } y
+\end{aligned}
+$$
+
+Because each deviation from the mean is divided by the standard deviation of its
+own variable, $r$ is unitless and can be compared across variables measured on
+entirely different scales.
+
+The correlation coefficient ranges from $-1$ to $+1$. A value of $+1$ indicates a
+perfect positive linear relationship, in which the two variables increase
+together in exact proportion, and a value of $-1$ indicates a perfect negative
+linear relationship, in which one increases exactly as the other decreases. A
+correlation of 0 means there is no linear association between the two variables,
+though it does not rule out a relationship of some other, non-linear form.
+
+We examine these correlations because strongly inter-correlated predictors create
+multicollinearity, which makes it difficult for the regression to isolate the
+individual contribution of each predictor and leaves the coefficient estimates
+unstable. A correlation greater than $|0.8|$ between a pair of predictors would
+indicate severe multicollinearity and call for dropping one of them. The
+dependent variable is deliberately excluded from this check, since a strong
+correlation between a predictor and the dependent variable is desirable rather
+than problematic.
+
+### Multiple Regression Analysis
+
+#### The method
+
+Multiple regression is used to model the relationship between a single
+continuous dependent variable and a set of predictors. It estimates a linear
+equation that describes how the dependent variable changes as each predictor
+changes, and it does so for all predictors simultaneously rather than one at a
+time. The result is a coefficient for each predictor that represents its
+association with the dependent variable while the remaining predictors are held
+constant, which allows the individual contribution of each predictor to be
+isolated. The fitted equation can then be used both to interpret those
+relationships and to generate predicted values for observations in the data.
+
+#### The model
+
+For this analysis, the dependent variable is the natural log of median house
+value, and the model is
+
+$$
+\begin{aligned}
+\text{LNMEDHVAL} = \ &\beta_{0}
++ \beta_{1}\,\text{PCTVACANT}
++ \beta_{2}\,\text{PCTSINGLES} \\[4pt]
+&+ \beta_{3}\,\text{PCTBACHMOR}
++ \beta_{4}\,\text{LNNBELPOV100}
++ \varepsilon
+\end{aligned}
+\tag{2}
+$$
+
+where
+
+$$
+\begin{aligned}
+\text{LNMEDHVAL} &= \text{natural log of median house value} \\
+\text{PCTVACANT} &= \text{percent of housing units that are vacant} \\
+\text{PCTSINGLES} &= \text{percent of housing units that are detached single family homes} \\
+\text{PCTBACHMOR} &= \text{percent of residents with at least a bachelor's degree} \\
+\text{LNNBELPOV100} &= \text{natural log of one plus the number of households in poverty} \\
+\beta_{0} &= \text{the intercept, the expected value of LNMEDHVAL when all predictors equal zero} \\
+\beta_{1} \ldots \beta_{4} &= \text{the slope coefficients, each giving the expected change in} \\
+&\quad \ \text{LNMEDHVAL for a one unit increase in its predictor, holding the others constant} \\
+\varepsilon &= \text{the error term, the portion of LNMEDHVAL not explained by the predictors}
+\end{aligned}
+$$
+
+Both the dependent variable and the poverty predictor are log transformed. The
+remaining three predictors enter the model untransformed, so their coefficients
+describe the effect of a one percentage point increase in each.
+
+#### Assumptions
+
+The model rests on five assumptions.
+
+**Linearity.** The relationship between each predictor and the dependent
+variable is assumed to be linear. If the true relationship curves, a straight
+line will misstate the effect across parts of the range.
+
+**Independence of observations.** Each observation is assumed to be independent
+of every other. With spatial data this assumption is often questionable, since
+nearby block groups may resemble one another, a condition known as spatial
+autocorrelation.
+
+**Normality of residuals.** The errors are assumed to be normally distributed
+with a mean of zero. Note that this applies to the residuals rather than to the
+raw variables, which need not be normal themselves.
+
+**Homoscedasticity.** The variance of the errors is assumed to be constant
+across all levels of the predicted values. If instead the errors widen or narrow
+systematically, a condition called heteroscedasticity, the standard errors and
+the significance tests built on them 
+
+### Additional Analyses
+
+#### Stepwise regression
+
+Stepwise regression automates the choice of which predictors to retain. Starting
+from a specified model, the algorithm adds or removes one predictor at a time and
+scores each candidate model using the Akaike Information Criterion, a measure
+that balances fit against the number of predictors used. Fitting better lowers
+the score and each additional predictor raises it, so a predictor earns its place
+only if the improvement outweighs the added complexity. Lower is better, and the
+value means something only in comparison with other models. The procedure makes
+whichever move lowers the score most and stops when no further change improves
+it. We run it in both directions, so predictors may be either added or dropped.
+
+Its limitations is as it searches many models against the same
+data and reports the winner, it is prone to overfitting, and the p-values for the
+selected model are optimistic since they ignore the search that produced it. It
+finds a model that cannot be improved by a single step, not necessarily the best
+one. It also ignores theory about which predictors should matter, so it is better
+treated as one piece of evidence than as a decision rule.
+
+#### K-fold cross-validation
+
+Cross-validation assesses how well a model predicts observations it was not
+fitted on. This matters because a model is estimated using the full dataset and
+will necessarily fit that data reasonably well, which makes in-sample measures
+such as $R^{2}$ an optimistic guide to performance on new observations.
+
+We use k-fold cross-validation with $k = 5$. The 1,720 block groups are divided
+at random into five roughly equal groups, or folds. The model is then fitted five
+times. On each repetition, four folds are used to estimate the coefficients and
+the remaining fold is held out, with the fitted model used to generate predictions
+for the held-out observations. Each fold serves as the held-out set exactly once,
+so every block group receives a prediction from a model that was estimated
+without it.
+
+Model performance is summarized by the root mean square error, calculated from
+these cross-validated predictions:
+
+$$
+RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}\left(y_{i} - \hat{y}_{i}\right)^{2}}
+\tag{9}
+$$
+
+where
+
+$$
+\begin{aligned}
+n &= \text{the number of observations, here the 1,720 block groups} \\
+y_{i} &= \text{observed value of the dependent variable for observation } i \\
+\hat{y}_{i} &= \text{cross-validated predicted value for observation } i
+\end{aligned}
+$$
+
+Each prediction error is squared so that positive and negative errors do not
+offset one another and so that larger errors carry disproportionate weight. These
+squared errors are averaged, and the square root returns the result to the units
+of the dependent variable, here log median house value. A lower RMSE indicates
+predictions closer to the observed values, so the measure is interpreted as the
+typical size of the model's prediction error.
+
+An individual RMSE value is not meaningful in isolation, since its scale depends
+on the units of the dependent variable. It is used instead to compare models
+fitted to the same dependent variable. We apply this procedure to the four
+predictor model specified above and to a reduced model containing only PCTVACANT
+and MEDHHINC as predictors, and compare the two resulting RMSE values.
+
+### Software
+
+All analysis was carried out in R. Summary statistics, histograms, scatter plots,
+correlations, and the regression models were produced using base R functions,
+including `lm` for the regression and `cor` for the correlation matrix. The
+`MASS` package was used for the stepwise regression, the `DAAG` package for the
+k-fold cross-validation, and the `sf` and `tmap` packages for reading the
+shapefile and producing the choropleth maps. 
+
+The report itself was written in R
+Markdown, so the code, output, and text are contained in a single document.
 
 ## RESULTS (Tegan)
-# Exploratory Results
+### Exploratory Results
 ```{r}
 summary_table
 ```
@@ -586,14 +820,14 @@ cor(cbind(PCTVACANT, PCTSINGLES, PCTBACHMOR, LNNBELPOV100))
 ```
 The correlation matrix does not show severe multicollinearity. The greatest value is -0.3197668. The correlation matrix does support the conclusion made based on the visual comparisons of predictor maps. The correlation matrix suggests that percent vacant and households below poverty have the highest correlation and percent single family households and percent with a bachelor’s degree or higher have the second highest correlation. Percent vacant and percent with a bachelors or higher have low correlation, and percent bachelor’s or higher and households below poverty have the lowest correlation. 
 
-# Regression Results
+### Regression Results
 
 ```{r}
 summary(regression)
 ```
 The regression model is statistically significant, with an F-statistic of 840.9 and a p-value less than 2.2 × 10⁻¹⁶. The model hads an R² of 0.6623 and an adjusted R² of 0.6615, indicating that approximately 66.23% of the variation in log median household value was explained by the four predictors. The adjusted R² is very close to the R², suggesting that the model's explanatory power remained similar after accounting for the number of predictors.All four independent variables are statistically significant at the 0.001 level, holding the other variables constant. The percentage of vacant housing has a negative coefficient of -0.01916 (p < 0.001). This indicates that a one-percentage-point increase in vacant housing was associated with approximately a 1.90% decrease in median household value. The percentage of single-person households has a positive coefficient of 0.00298 (p < 0.001), indicating that a one-percentage-point increase in single-person households is associated with approximately a 0.30% increase in median household value.The percentage of residents with a bachelor's degree or higher has a positive coefficient of 0.02091 (p < 0.001). This suggests that a one-percentage-point increase in residents with a bachelor's degree or higher was associated with approximately a 2.11% increase in median household value. The natural logarithm of the number of residents living below the poverty threshold has a negative coefficient of -0.07891 (p < 0.001). Because both the dependent variable and this predictor were log-transformed, the coefficient can be interpreted as an elasticity: a 1% increase in the neighborhood poverty measure is associated with approximately a 0.079% decrease in median household value. The results indicate that residential vacancy and neighborhood poverty were negatively associated with median household value, while the percentage of single-person households and the percentage of residents with a bachelor's degree or higher were positively associated with median household value. These relationships are statistically significant within the fitted model, although they do not establish causation. CHECK EUGENE'S SLIDES FOR INTERPETTING LOGGED VARIABLES
 
-# Regression Assumption Checks
+### Regression Assumption Checks
 
 In this section, we will discuss testing model assumptions. We have already looked at the variable distributions earlier. 
 
@@ -636,7 +870,7 @@ map6
 It seems that there is some spatial autocorrelation in the standardized regression residuals map. Areas towards center city tend to have larger negative values whereas areas towards the borders of the city boundary have larger positive values. Specifically in the northeast, there are many neighboring census tracts that fall within the same value bin. Throughout the rest of the city, the values vary slightly more from tract to tract, though largely follow the pattern described earlier. 
 
 
-# Additional Models
+### Additional Models
 
 ```{r}
 step_regression <- stepAIC(regression, direction = "both")
