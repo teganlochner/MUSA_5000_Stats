@@ -520,9 +520,245 @@ map6
 
 ## RESULTS (Tegan)
 # Exploratory Results
+```{r}
+summary_table
+```
+
+The dependent variable for this statistical analysis is MEDHVAL (Median value of all owner occupied housing units), and the predictors are PCTBACHMOR (Proportion of residents in Block Group with at least a bachelor's degree), PCTVACANT (Proportion of housing units that are vacant), PCTSINGLES (Percent of housing units that are detached single family houses), NBELPOV100 (Number of households with incomes below 100% poverty level), and MEDHHINC (Median household income). For MEDHVAL the mean is 66,287.733 and the standard deviation is 60,006.08 which means that the average value of the median value of owner-occupied housing units is $66,278 and it can vary by $60,006. This is a relatively large standard deviation in comparison to the mean which can be interpreted as there being a very large range in median housing unit value in Philadelphia. The mean of PCTBACHMOR is 16.06 and the standard deviation is 17.80, which means that about 16% of any given block group has a bachelor’s degree, but since the standard deviation is relatively very high, this also means that there is extreme variation in educational attainment across block groups. The mean for PCTVACANT is 11.29 and the standard deviation is 9.63 which means that about 11% of housing units in any given block group are vacant and results vary by about 9%. The mean for PCTSINGLES is 9.23 and the standard deviation is 13.25 which means that in any given block group about 9% of housing units are detached single family homes and there is about 13% variation. The mean for NBELPOV100 is 189.77 and the standard deviation is 164.31 which means that in any given block group there are about 190 households with incomes below 100% poverty level and this varies by about 164 households. The mean for MEDHHINC is 31541.76 and the standard deviation is 16298.43 which means that in any given block group the average median household income is about $31,542 and this can vary but $16,298. Across all predictors, there are relatively high standard deviations, meaning there is a lot of variation within the data. 
+
+Many of the variables used in this study are not normal, so we completed a the logarithmic transformation for each variable in an attempt to normalize the data. The logarithmic transformation only normalizes MEDHVAL and NBELPOV100, whereas the other variables show a large spike at zero. The following histograms visualize the logarithmic transformations.
+
+```{r}
+hist(MEDHVAL)
+hist(LNMEDHVAL)
+```
+
+```{r}
+hist(PCTBACHMOR)
+hist(LNPCTBACHMOR)
+```
+
+```{r}
+hist(NBELPOV100)
+hist(LNNBELPOV100)
+```
+
+```{r}
+hist(PCTVACANT)
+hist(LNPCTVACANT)
+```
+
+```{r}
+hist(PCTSINGLES)
+hist(LNPCTSINGLES)
+```
+Ultimately, we decided to use the original PCBACHMORE, PCTVACANT, and PCTSINGLES variables and the transformed LNMEDHVAL and LNNBELPOV100 variables in the regression. The other regression assumptions will be examined in a separate section below. 
+
+```{r}
+map1
+predictor_maps.png
+```
+The choropleth maps that visualize the percent vacant households and the households below poverty look the most similar. The choropleth maps for percent bachelor’s degree or higher and percent single-family homes have vague spatial similarities but are not as similar as the others are to each other. This suggests that percent vacant and households below poverty may be inter-correlated and percent single-family and percent bachelor’s degree or higher may be inter-correlated. That being said, the maps are similar but not enough that we would expect severe multicollinearity. Based on the maps, we would expect that percent bachelors degree or higher would be the most strongly associated with the dependent variable, then percent single family home. 
+
+```{r}
+cor(cbind(PCTVACANT, PCTSINGLES, PCTBACHMOR, LNNBELPOV100))
+```
+The correlation matrix does not show severe multicollinearity. The greatest value is -0.3197668. The correlation matrix does support the conclusion made based on the visual comparisons of predictor maps. The correlation matrix suggests that percent vacant and households below poverty have the highest correlation and percent single family households and percent with a bachelor’s degree or higher have the second highest correlation. Percent vacant and percent with a bachelors or higher have low correlation, and percent bachelor’s or higher and households below poverty have the lowest correlation. 
+
 # Regression Results
+
+```{r}
+summary(regression)
+```
+The regression model is statistically significant, with an F-statistic of 840.9 and a p-value less than 2.2 × 10⁻¹⁶. The model hads an R² of 0.6623 and an adjusted R² of 0.6615, indicating that approximately 66.23% of the variation in log median household value was explained by the four predictors. The adjusted R² is very close to the R², suggesting that the model's explanatory power remained similar after accounting for the number of predictors.All four independent variables are statistically significant at the 0.001 level, holding the other variables constant. The percentage of vacant housing has a negative coefficient of -0.01916 (p < 0.001). This indicates that a one-percentage-point increase in vacant housing was associated with approximately a 1.90% decrease in median household value. The percentage of single-person households has a positive coefficient of 0.00298 (p < 0.001), indicating that a one-percentage-point increase in single-person households is associated with approximately a 0.30% increase in median household value.The percentage of residents with a bachelor's degree or higher has a positive coefficient of 0.02091 (p < 0.001). This suggests that a one-percentage-point increase in residents with a bachelor's degree or higher was associated with approximately a 2.11% increase in median household value. The natural logarithm of the number of residents living below the poverty threshold has a negative coefficient of -0.07891 (p < 0.001). Because both the dependent variable and this predictor were log-transformed, the coefficient can be interpreted as an elasticity: a 1% increase in the neighborhood poverty measure is associated with approximately a 0.079% decrease in median household value. The results indicate that residential vacancy and neighborhood poverty were negatively associated with median household value, while the percentage of single-person households and the percentage of residents with a bachelor's degree or higher were positively associated with median household value. These relationships are statistically significant within the fitted model, although they do not establish causation. CHECK EUGENE'S SLIDES FOR INTERPETTING LOGGED VARIABLES
+
 # Regression Assumption Checks
+
+In this section, we will discuss testing model assumptions. We have already looked at the variable distributions earlier. 
+
+```{r}
+plot(LNMEDHVAL,LNNBELPOV100)
+plot(LNMEDHVAL,PCTBACHMOR)
+plot(LNMEDHVAL,PCTVACANT)
+plot(LNMEDHVAL,PCTSINGLES)
+```
+
+The relationships presented by the scatter plots of the dependent variable and each of the predictors does not appear to be linear, as assumed by the regression model. This suggests that the model may not accurately or fully understand the relationships in the data thus reducing its accuracy. Further examinatino of the residuals will need to be done in order to come to a conclusion. 
+
+```{r}
+hist(regression_standardresiduals)
+```
+
+The histogram of standardized residuals appears to be normally distributed. It is important to check if standardized residuals are normally distributed because it supports the reliability of the statistical test. A non-normal distribution may suggest that there are strong outliers that should be addressed further. 
+
+Present the ‘Standardized Residual by Predicted Value’ scatter plot. What conclusions can you draw from that? Does there seem to be heteroscedasticity? Do there seem to be outliers? Anything else? Discuss.
+```{r}
+plot(
+  regression_predicted,
+  regression_standardresiduals,
+  xlab = "Predicted Values",
+  ylab = "Standardized Residuals",
+  main = "Standardized Residuals vs. Predicted Values",
+  pch = 20
+)
+
+abline(h = 0, lty = 2, col = "red")
+```
+This plot shows the standardized residuals vs. predicted value. Standardized residuals are the differences between the actual data values and the values predicted by the model. It is crucial to plot these against each other in order to determine if there are any unaccounted for predictors. The data is like plot appears as an organic-cloud-like form which indicates that there are likely not predictors unaccounted for, this is pattern is known as homoscedasticity. A heteroscedastic plot would show a pattern in the data, for example the data may fan out toward one side. This would indicate that there are more predictors that need to be included in the regression model. There appears to be some minor outliers at -6 and 6 which indicates that there are a few tracts where the model grreatly overpredicts or underpredicts the median household value. This could be caused by unsual census tracts or lapses in the data collection. 
+
+There appears to be some spatial autcorrelation in our variables. Across four of the maps, the dependent variable and three of the four predictors, similar results seem to cluster together in nearby locations. The only map that appears to have no or limited spatial autocorrelation is the map of percentage of single family households. This is important to note because spatial interdependence may violate the assumptions of the regression module, that all census tracts operate independently. Spatial autocorrelation tests would need to be done in order to draw further conclusion. We will examine the spatial autocorrelation of the variables in residuals in the next assignment. 
+
+```{r}
+map6
+```
+
+It seems that there is some spatial autocorrelation in the standardized regression residuals map. Areas towards center city tend to have larger negative values whereas areas towards the borders of the city boundary have larger positive values. Specifically in the northeast, there are many neighboring census tracts that fall within the same value bin. Throughout the rest of the city, the values vary slightly more from tract to tract, though largely follow the pattern described earlier. 
+
+
 # Additional Models
+
+```{r}
+step_regression <- stepAIC(regression, direction = "both")
+step_regression
+step_regression$anova
+AIC(step_regression)
+```
+All of the predictors are kept in the final model. 
+
+```{r}
+# k fold validation 
+regression_data$LNNBELPOV100 <- LNNBELPOV100
+cv1 <- CVlm(
+  data = regression_data,
+  form.lm = formula(regression),
+  m = 5,
+  plotit = FALSE
+)
+
+# format
+# Create plot data
+plot_data <- data.frame(
+  Observed = cv1$LNMEDHVAL,
+  Predicted = cv1$cvpred,
+  Fold = factor(cv1$fold)
+)
+
+# Assign a different color to each fold
+fold_colors <- c("steelblue", "tomato", "forestgreen", "orange", "purple")
+
+# Leave space on the right for the legend
+par(mar = c(5, 5, 4, 10), xpd = TRUE)
+
+# Plot observed versus predicted values
+plot(
+  plot_data$Observed,
+  plot_data$Predicted,
+  pch = 16,
+  cex = 0.6,
+  col = fold_colors[as.numeric(plot_data$Fold)],
+  xlab = "Observed log median housing value",
+  ylab = "Cross-validated predicted value",
+  main = "5-Fold Cross-Validation",
+  bty = "l"
+)
+
+# Reference line for perfect predictions
+abline(0, 1, lty = 2, lwd = 2, col = "gray40")
+
+# Legend on the right
+legend(
+  "topright",
+  inset = c(-0.65, 0),
+  legend = c(paste("Fold", 1:5), "Perfect prediction"),
+  col = c(fold_colors, "gray40"),
+  pch = c(rep(16, 5), NA),
+  lty = c(rep(NA, 5), 2),
+  lwd = c(rep(NA, 5), 2),
+  bty = "n",
+  cex = 0.8
+)
+
+par(xpd = FALSE)
+
+
+rmse1 <- sqrt(mean(
+  (cv1$LNMEDHVAL - cv1$cvpred)^2,
+  na.rm = TRUE
+))
+
+rmse1
+
+# Create the second regression model with only two predictors
+regression2 <- lm(
+  LNMEDHVAL ~ PCTVACANT + MEDHHINC,
+  data = regression_data
+)
+
+# Run 5-fold cross-validation
+cv2 <- CVlm(
+  data = regression_data,
+  form.lm = formula(regression2),
+  m = 5,
+  plotit = FALSE
+)
+
+# Format the cross-validation results
+plot_data <- data.frame(
+  Observed = cv2$LNMEDHVAL,
+  Predicted = cv2$cvpred,
+  Fold = factor(cv2$fold)
+)
+
+# Assign a different color to each fold
+fold_colors <- c("steelblue", "tomato", "forestgreen", "orange", "purple")
+
+# Leave space on the right for the legend
+par(mar = c(5, 5, 4, 10), xpd = TRUE)
+
+# Plot observed versus predicted values
+plot(
+  plot_data$Observed,
+  plot_data$Predicted,
+  pch = 16,
+  cex = 0.6,
+  col = fold_colors[as.numeric(plot_data$Fold)],
+  xlab = "Observed log median housing value",
+  ylab = "Cross-validated predicted value",
+  main = "5-Fold Cross-Validation: PCTVACANT + MEDHHINC",
+  bty = "l"
+)
+
+# Reference line for perfect predictions
+abline(0, 1, lty = 2, lwd = 2, col = "gray40")
+
+# Legend on the right
+legend(
+  "topright",
+  inset = c(-0.65, 0),
+  legend = c(paste("Fold", 1:5), "Perfect prediction"),
+  col = c(fold_colors, "gray40"),
+  pch = c(rep(16, 5), NA),
+  lty = c(rep(NA, 5), 2),
+  lwd = c(rep(NA, 5), 2),
+  bty = "n",
+  cex = 0.8
+)
+
+par(xpd = FALSE)
+
+# Calculate RMSE
+rmse2 <- sqrt(mean(
+  (cv2$LNMEDHVAL - cv2$cvpred)^2,
+  na.rm = TRUE
+))
+
+rmse2
+
+```
+cross validation 1 RMSE: 0.3664401
+cross validation 2 RMSE: 0.4427216
+
+The cross validation RMSE for the original model is lower than the cross validation RMSE for the model with only two predictors which indicates that the original model is more accurate. 
 
 ## DISCUSSION & LIMITATIONS (Sara)
 
