@@ -543,9 +543,17 @@ The regression output tells us that the there is a significant relationship betw
 
 Each of these variables has a p-value well below .05, meaning that we can confidently say that if there is actually no relationship in the population between the dependent variable and each of the independent variables, then the probability of getting sample beta coefficients this extreme is less than the associated p-value. 
 
-These low probabilities illustrate that we can safely reject $H_0: \beta_1 = 0$ for $H_1: \beta_1 \neq 0$, $H_0: \beta_2 = 0$ for $H_a: \beta_2 \neq 0$, $H_0: \beta_3 = 0$ for $H_a: \beta_3 \neq 0$, and $H_0: \beta_4 = 0$ for $H_a: \beta_4 \neq 0$.
+These low probabilities illustrate that we can safely reject 
+$$
+\begin{aligned}
+H_0&: \beta_1 = 0 \quad \text{for} \quad H_a: \beta_1 \neq 0 \\
+H_0&: \beta_2 = 0 \quad \text{for} \quad H_a: \beta_2 \neq 0 \\
+H_0&: \beta_3 = 0 \quad \text{for} \quad H_a: \beta_3 \neq 0 \\
+H_0&: \beta_4 = 0 \quad \text{for} \quad H_a: \beta_4 \neq 0
+\end{aligned}
+$$
 
-About 66% of the variance in the dependent variable is explained by the model (R^2 and Adjusted R^2 are .6623 and .6615, respectively). The low p-value associated with the F-ratio illustrates that we can reject the null hypothesis that all coefficients in the model are 0. 
+About 66% of the variance in the dependent variable is explained by the model ($R^2$ and adjusted $R^2$ are 0.6623 and 0.6615, respectively). The low p-value associated with the F-ratio of 840.86 illustrates that we can reject the null hypothesis that all coefficients in the model are 0. 
 
 Peer-reviewed studies suggest a positive relationship between median house value and median household income, and neighborhoods with clustered college graduates (Harvard University, US Census, National Bureau of Economic Research) . We want to examine a broader set of variables and their relationship to median house value. 
 
@@ -1029,19 +1037,23 @@ The cross validation RMSE for the original model is lower than the cross validat
 
 ## DISCUSSION & LIMITATIONS (Sara)
 
-To recap, we developed a linear regression model in which median house value was regressed on four independent variables. We attempted to determine a relationship by testing if the null hypothesis, xx, was rejected or a failure to reject… We did this through the following steps: 
-We found the mean and standard deviation of the dependent variable and each predictor
-We plotted histograms of the dependent variable and each predictor to determine whether the variables were normally distributed. None of them were, more specifically, they were all right skewed, so we performed logarithmic transformations on each to  determine their transformed histogram shape. The logarithmic transformation helped in creating a normally distributed histogram for the dependent variable and one predictor (NBELPOV100). It did not help because they have a large spike at zero (zero-inflated distributions) so we used the original for these variables. 
-We then created scatter plots to determine if there was any severe multicollinearity. We determined no severe multicollinearity was present. 
-We then created a map of the transformed median house value and split the values into 
+To recap, we developed a linear regression model in which median house value was regressed on four independent variables. We attempted to determine whether there was a significant relationship between our dependent variable and our independent variables. We did this through the following steps: 
+  *We found the mean and standard deviation of the dependent variable and each predictor
+  *We plotted histograms of the dependent variable and each predictor to determine whether the variables were normally distributed. None of them were, more specifically, they were all right skewed,     so we performed logarithmic transformations on each to  determine their transformed histogram shape. The logarithmic transformation helped in creating a normally distributed histogram for the      dependent variable and one predictor (NBELPOV100). The transformation did not help for PCTBACHMORE, PCTVACANT, and, PCTSINGLES which had large spiked at zero (zero-inflated distributions) so we     used the original values. 
+  *We then created scatter plots to determine if there was any heteroscedeasticity. We determined no heteroscedaticity was present. 
+  *Pearson correlation for multicollinearity....
+  *We then created a map of the transformed median house value 
+  
 
 
-The final model includes all 4 predictors. We The RMSE was xx, in the 5-fold with xx. The R^2 and adjusted R^2 were  and xx, almost identical because xx. This tells us that we have a reasonably good model because it demonstrates that our independent variable account for xx% of the variance we see in the dependent variable?? 
+The final model includes all 4 predictors because the stepwise regression based on AIC retained all four predictors. Removing any of them increased the AIC. The RMSE with all four predictors was .37, the RMSE with only two predictors was higher at .44. This tells us that our model with all four variables has a smaller prediction error, which means it predicted new data more accurately. The R^2 and adjusted R^2 were .6623 and .6615, respectively. These are almost identical because our sample is large compared to our number of predictors, so the penalty for many predictors is very small. This indicates a reasonably good model because the four predictors together account for about 66% of the variance in our dependent variable. The F-statistic is 840.86 (p<.001), making us confident that we can reject the null hypothesis. 
 
-Using raw numbers for households living in poverty may not provide the most accurate representation of rates of poverty in Philadelphia block groups. Two very different-sized block groups can have the same raw number of households living in poverty. By using this data, we don’t see the relationship between block group size and rate of households in poverty, we would only see that two block groups have the same raw number of households in poverty. By using percentage, we would see the proportion of households living in poverty per block group. 
+Most notably, because block groups are spatially clustered, the OLS residuals are most likely spatially autocorrelated. Because an assumption of OLS is independence of observations, spatial autocorrelation--typical with neighborhood data--poses somewhat of a problematic condition. It may be advantageous to run a spatial lag or spatial error model to build the neighborhood relationships into the model itself and help us determine if the p-values we calculated from our OLS model are accurate or if they are inflated. We could test for spatial autocorrelation in the residuals using Moran's I and based on the outcome, leverage spatial lag or spatial errors model to account for the dependence. 
 
 
-It would not make sense to run a Ridge or LASSO regression here because these methods are intended to be used on models with severe multicollinearity or a proportionally high number of variables compared to the number of observations. Both methods penalize large coefficients to reduce variance and overfitting. The Ridge regression shrinks and retains every variable, which makes the model less sensitive to individual data points. The LASSO regression may shrink some variables to zero, completely dropping them from the model if they are redundant or ineffective. Because we did not see severe multicollinearity (the most severe r value was -.32) and we have 1,700 observations with only five independent variables, we determined that using a Ridge or Lasso method would not be effective in making our model more predictive and may make our coefficients harder to interpret. 
+Using raw numbers for households living in poverty may not provide the most accurate representation of rates of poverty in Philadelphia block groups. Two very different-sized block groups can have the same raw number of households living in poverty. By using this data, we don’t see the relationship between block group size and rate of households in poverty, we would only see that two block groups have the same raw number of households in poverty. For example, a small block group could have very few households living in poverty, but a high rate, and a large block group could have many households living in poverty but may have a low rate. A percentage of households living in poverty per block group would more accurately capture how concentrated poverty is in each block group. 
+
+It would not make sense to run a Ridge or LASSO regression here because these methods are intended to be used on models with severe multicollinearity or a proportionally high number of variables compared to the number of observations. Both methods penalize large coefficients to reduce variance and overfitting. The Ridge regression shrinks and retains every variable, with the goal of stabilizing estimates when there is significant correlation between predictors. The LASSO regression may shrink some coefficients to zero, completely dropping them from the model if they are redundant or ineffective. Because we did not see severe multicollinearity (the most severe r value was -.32) and we have 1,720 observations with only four independent variables, we determined that using a Ridge or Lasso method would not be effective in making our model more predictive and may make our coefficients harder to interpret. 
 
 
 
