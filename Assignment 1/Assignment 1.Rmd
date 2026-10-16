@@ -1,7 +1,7 @@
 ---
 title: "Using OLS Regression to Predict Median House Values in Philadelphia"
 subtitle: "CPLN 671 / MUSA 5000: Statistics and Data Mining"
-author: "Sara Pearl Cerami, Gautami Kasat, Tegan Lochner"
+author: "Sara Cerami, Gautami Kasat, Tegan Lochner"
 date: "October 16, 2026"
 output:
   html_document:
@@ -520,7 +520,7 @@ map6
 ```
 ## REPORT - Draft by Wednesday, Submit Friday 
 
-## INTRODUCTION (Sara)
+## INTRODUCTION
 In this analysis, we examined the relationship between Philadelphia median house values and several neighborhood characteristics using census block-level data. We measured the relationship by regressing median house value on the following variables: 
 
   *Proportion of residents in Block Group with at least a bachelor’s
@@ -559,7 +559,7 @@ Peer-reviewed studies suggest a positive relationship between median house value
 
 Historically, single-family homes are clustered in areas with higher median house value. Starting in the 1930s, racist redlining and zoning practices became commonplace across the country, with the intention of maintaining segregated neighborhoods, denying Black and brown families a path to generational wealth accumulation, and displacing historically Black and brown neighborhoods. As a result, white and wealthy neighborhoods, typically with a large concentration of single-family homes, higher rates of education, and higher median household income, were protected from harmful redevelopment such as the bisection of communities through highway development and eminent domain of homes and businesses. Meanwhile, Black and brown communities were subject to significant displacement and deliberately denied access to homeownership and property value appreciation, the effects of which we still see today. Although race is not a variable in our model, Philadelphia’s history of redlining and Urban Renewal contributed to the economically stratified neighborhood patterns we see in this model. The history of redlining and displacement does not disaggregate race from class; in fact, the impact of these policies were racist in their institutional denial of upward mobility in marginalized communities and classed in their racialization. Policies such as redlining and urban renewal were framed as economic revitalization initiatives, but in practice, they resulted in the disinvestment of Black and brown neighborhoods, making poor neighborhoods poorer and wealthy neighborhoods wealthier. The predictors we evaluate are likely related to our response variable because they stem from the same historical processes that shaped the residential construction of Philadelphia and much of our country.      
 
-## METHODS (Gautami)
+## METHODS
 
 ### Data Cleaning
 
@@ -793,7 +793,7 @@ shapefile and producing the choropleth maps.
 The report itself was written in R
 Markdown, so the code, output, and text are contained in a single document.
 
-## RESULTS (Tegan)
+## RESULTS
 ### Exploratory Results
 ```{r}
 summary_table
@@ -831,7 +831,7 @@ Ultimately, we decided to use the original PCBACHMORE, PCTVACANT, and PCTSINGLES
 
 ```{r}
 map1
-predictor_maps.png
+predictor_maps
 ```
 The choropleth maps that visualize the percent vacant households and the households below poverty look the most similar. The choropleth maps for percent bachelor’s degree or higher and percent single-family homes have vague spatial similarities but are not as similar as the others are to each other. This suggests that percent vacant and households below poverty may be inter-correlated and percent single-family and percent bachelor’s degree or higher may be inter-correlated. That being said, the maps are similar but not enough that we would expect severe multicollinearity. Based on the maps, we would expect that percent bachelors degree or higher would be the most strongly associated with the dependent variable, then percent single family home. 
 
@@ -1035,7 +1035,7 @@ cross validation 2 RMSE: 0.4427216
 
 The cross validation RMSE for the original model is lower than the cross validation RMSE for the model with only two predictors which indicates that the original model is more accurate. 
 
-## DISCUSSION & LIMITATIONS (Sara)
+## DISCUSSION & LIMITATIONS
 
 To recap, we developed a linear regression model in which median house value was regressed on four independent variables. We attempted to determine whether there was a significant relationship between our dependent variable and our independent variables. We did this through the following steps: 
   *We found the mean and standard deviation of the dependent variable and each predictor
