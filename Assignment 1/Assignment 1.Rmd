@@ -612,7 +612,6 @@ hist(regression_standardresiduals)
 
 The histogram of standardized residuals appears to be normally distributed. It is important to check if standardized residuals are normally distributed because it supports the reliability of the statistical test. A non-normal distribution may suggest that there are strong outliers that should be addressed further. 
 
-Present the ‘Standardized Residual by Predicted Value’ scatter plot. What conclusions can you draw from that? Does there seem to be heteroscedasticity? Do there seem to be outliers? Anything else? Discuss.
 ```{r}
 plot(
   regression_predicted,
