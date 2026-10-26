@@ -1,0 +1,487 @@
+---
+title: "Assignment 2"
+output: html_document
+---
+
+### load the data 
+```{r}
+install.packages("GWmodel")
+
+# Load packages
+library(sf)
+library(spdep)
+library(spatialreg)
+library(GWmodel)
+library(tidyverse)
+library(tmap)
+library(broom)
+```
+### load the shapefile 
+```{r}
+philly <- st_read(
+  "RegressionDataFiles.shp"
+)
+```
+logaraithmic variables were already created in assignment 1, move onto next step
+
+### Queen-contiguity spatial weights
+```{r}
+# Check the coordinate system
+st_crs(philly)
+
+# Repair invalid geometries if necessary
+philly <- st_make_valid(philly)
+
+# Create Queen-contiguity neighbors
+queen_nb <- poly2nb(
+  philly,
+  queen = TRUE
+)
+
+# Create row-standardized spatial weights
+queen_weights <- nb2listw(
+  queen_nb,
+  style = "W",
+  zero.policy = TRUE
+)
+
+# Check the neighbor structure
+summary(queen_nb)
+summary(card(queen_nb))
+```
+
+### Global Moran's I for median house values 
+```{r}
+# Global Moran's I
+moran.test(
+  philly$LNMEDHVAL,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+# Randomization test with 999 permutations
+set.seed(5080)
+
+moran.mc(
+  philly$LNMEDHVAL,
+  queen_weights,
+  nsim = 999,
+  zero.policy = TRUE
+)
+```
+### LISA: Local Moran's I 
+```{r}
+lisa <- localmoran(
+  philly$LNMEDHVAL,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+# Attach local Moran statistics to the polygons
+philly$local_I <- lisa[, "Ii"]
+philly$local_p <- lisa[, "Pr(z != E(Ii))"]
+
+# Map local Moran's I
+tm_shape(philly) +
+  tm_polygons(
+    "local_I",
+    palette = "Viridis",
+    style = "quantile",
+    title = "Local Moran's I"
+  ) +
+  tm_layout(
+    title = "Local Spatial Autocorrelation in Median House Values"
+  )
+```
+
+### OLS Regression
+```{r}
+# Model formula
+model_formula <- LNMEDHVAL ~
+  PCTBACHMOR +
+  PCTVACANT +
+  PCTSINGLES +
+  LNNBELPOV +
+  MEDHHINC
+
+# Fit OLS
+ols_model <- lm(
+  model_formula,
+  data = philly
+)
+
+# Regression output
+summary(ols_model)
+```
+
+### save the fitted values and residuals 
+```{r}
+philly$OLS_PRED <- fitted(ols_model)
+philly$OLS_RESID <- residuals(ols_model)
+```
+
+### test OLD residuals for spatial autocorrelation 
+```{r}
+# Moran's I test for OLS residuals
+moran.test(
+  philly$OLS_RESID,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+set.seed(5080)
+
+moran.mc(
+  philly$OLS_RESID,
+  queen_weights,
+  nsim = 999,
+  zero.policy = TRUE
+)
+```
+
+### weighted residuals and scatterplot 
+```{r}
+philly$WT_RESID <- lag.listw(
+  queen_weights,
+  philly$OLS_RESID,
+  zero.policy = TRUE
+)
+
+# Regress residuals on neighboring residuals
+resid_model <- lm(
+  OLS_RESID ~ WT_RESID,
+  data = philly
+)
+
+summary(resid_model)
+
+# Scatterplot with fitted regression line
+ggplot(
+  st_drop_geometry(philly),
+  aes(x = WT_RESID, y = OLS_RESID)
+) +
+  geom_point(alpha = 0.4, size = 1) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "OLS Residuals vs. Spatially Lagged Residuals",
+    x = "Weighted Average of Neighboring OLS Residuals",
+    y = "OLS Residuals"
+  ) +
+  theme_minimal()
+```
+
+### spatial lag model 
+```{r}
+lag_model <- lagsarlm(
+  model_formula,
+  data = philly,
+  listw = queen_weights,
+  zero.policy = TRUE,
+  method = "eigen"
+)
+
+summary(lag_model)
+```
+
+### save residuals and test for spatial autocorrelation 
+```{r}
+philly$LAG_RESID <- residuals(lag_model)
+
+moran.test(
+  philly$LAG_RESID,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+set.seed(5080)
+
+moran.mc(
+  philly$LAG_RESID,
+  queen_weights,
+  nsim = 999,
+  zero.policy = TRUE
+)
+```
+
+### run spatial error model
+```{r}
+error_model <- errorsarlm(
+  model_formula,
+  data = philly,
+  listw = queen_weights,
+  zero.policy = TRUE,
+  method = "eigen"
+)
+
+summary(error_model)
+```
+
+### test the residuals
+```{r}
+philly$ERROR_RESID <- residuals(error_model)
+
+moran.test(
+  philly$ERROR_RESID,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+set.seed(5080)
+
+moran.mc(
+  philly$ERROR_RESID,
+  queen_weights,
+  nsim = 999,
+  zero.policy = TRUE
+)
+```
+
+### compare the three regression models
+```{r}
+model_comparison <- tibble(
+  Model = c("OLS", "Spatial Lag", "Spatial Error"),
+  AIC = c(
+    AIC(ols_model),
+    AIC(lag_model),
+    AIC(error_model)
+  ),
+  R_squared = c(
+    summary(ols_model)$r.squared,
+    NA_real_,
+    NA_real_
+  )
+)
+
+model_comparison
+```
+
+### run geographically weighted regression (GWR)
+#### prepare data 
+```{r}
+# Project the data
+philly_gwr <- st_set_crs(philly, 2272)
+
+# Convert to Spatial format for GWmodel compatibility
+philly_sp <- as(philly_gwr, "Spatial")
+
+# Check coordinate system
+st_crs(philly_gwr)
+```
+
+#### select bandwidth
+```{r}
+# Select bandwidth using AICc
+gwr_bandwidth <- bw.gwr(
+  model_formula,
+  data = philly_sp,
+  approach = "AICc",
+  kernel = "bisquare",
+  adaptive = TRUE
+)
+
+gwr_bandwidth
+```
+
+#### fit GWR
+```{r}
+gwr_model <- gwr.basic(
+  model_formula,
+  data = philly_sp,
+  bw = gwr_bandwidth,
+  kernel = "bisquare",
+  adaptive = TRUE,
+  F123.test = TRUE,
+  cv = TRUE
+)
+
+# Global GWR diagnostics
+gwr_model$GW.diagnostic
+```
+
+#### map local r-squared
+```{r}
+gwr_results <- st_as_sf(gwr_model$SDF)
+
+names(gwr_results)
+```
+
+```{r}
+ggplot(gwr_results) +
+  geom_sf(aes(fill = Local_R2), color = NA) +
+  scale_fill_viridis_c(
+    name = "Local R-squared",
+    na.value = "grey80"
+  ) +
+  labs(
+    title = "Local R-squared from Geographically Weighted Regression"
+  ) +
+  theme_minimal()
+```
+
+### test GWR residuals for spatial autocorrelation
+```{r}
+names(gwr_results)
+
+# Save GWR residuals
+philly$GWR_RESID <- gwr_results$residual
+
+# Global Moran's I
+moran.test(
+  philly$GWR_RESID,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+# Permutation test
+set.seed(5080)
+
+gwr_moran <- moran.mc(
+  philly$GWR_RESID,
+  queen_weights,
+  nsim = 999,
+  zero.policy = TRUE
+)
+
+gwr_moran
+```
+
+### map local coefficient to standard error ratios
+```{r}
+names(gwr_results)
+
+# Example for one predictor
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_PCTBACHMOR =
+      PCTBACHMOR / PCTBACHMOR_SE
+  )
+
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_category = case_when(
+      ratio_PCTBACHMOR < -2 ~ "Below -2",
+      ratio_PCTBACHMOR < 0  ~ "-2 to 0",
+      ratio_PCTBACHMOR <= 2 ~ "0 to 2",
+      ratio_PCTBACHMOR > 2  ~ "Above 2",
+      TRUE ~ NA_character_
+    ),
+    ratio_category = factor(
+      ratio_category,
+      levels = c(
+        "Below -2",
+        "-2 to 0",
+        "0 to 2",
+        "Above 2"
+      )
+    )
+  )
+
+ggplot(gwr_results) +
+  geom_sf(aes(fill = ratio_category), color = NA) +
+  scale_fill_manual(
+    values = c(
+      "Below -2" = "darkred",
+      "-2 to 0" = "pink",
+      "0 to 2" = "lightblue",
+      "Above 2" = "darkblue"
+    ),
+    na.value = "grey80",
+    name = "Coefficient / SE"
+  ) +
+  labs(
+    title = "Local Coefficient-to-SE Ratio: Bachelor's Degree"
+  ) +
+  theme_minimal()
+```
+REPEAT FOR EACH VARIABLE
+
+```{r}
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_PCTBACHMOR =
+      PCTBACHMOR / PCTBACHMOR_SE
+  )
+
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_category = case_when(
+      ratio_PCTBACHMOR < -2 ~ "Below -2",
+      ratio_PCTBACHMOR < 0  ~ "-2 to 0",
+      ratio_PCTBACHMOR <= 2 ~ "0 to 2",
+      ratio_PCTBACHMOR > 2  ~ "Above 2",
+      TRUE ~ NA_character_
+    ),
+    ratio_category = factor(
+      ratio_category,
+      levels = c(
+        "Below -2",
+        "-2 to 0",
+        "0 to 2",
+        "Above 2"
+      )
+    )
+  )
+
+ggplot(gwr_results) +
+  geom_sf(aes(fill = ratio_category), color = NA) +
+  scale_fill_manual(
+    values = c(
+      "Below -2" = "darkred",
+      "-2 to 0" = "pink",
+      "0 to 2" = "lightblue",
+      "Above 2" = "darkblue"
+    ),
+    na.value = "grey80",
+    name = "Coefficient / SE"
+  ) +
+  labs(
+    title = "Local Coefficient-to-SE Ratio: Bachelor's Degree"
+  ) +
+  theme_minimal()
+```
+
+### save results
+```{r}
+# Save shapefile with residuals
+st_write(
+  philly,
+  "RegressionFinal_Results.shp",
+  delete_layer = TRUE
+)
+
+# Save GWR local coefficients and diagnostics
+st_write(
+  gwr_results,
+  "GWR_Results.shp",
+  delete_layer = TRUE
+)
+
+# Save regression summaries to a text file
+sink("Regression_Summaries.txt")
+
+cat("OLS MODEL\n")
+print(summary(ols_model))
+
+cat("\nSPATIAL LAG MODEL\n")
+print(summary(lag_model))
+
+cat("\nSPATIAL ERROR MODEL\n")
+print(summary(error_model))
+
+cat("\nGWR DIAGNOSTICS\n")
+print(gwr_model$GW.diagnostic)
+
+sink()
+
+saveRDS(
+  list(
+    ols = ols_model,
+    spatial_lag = lag_model,
+    spatial_error = error_model,
+    gwr = gwr_model,
+    comparison = model_comparison
+  ),
+  "Philadelphia_Regression_Models.rds"
+)
+```
+
