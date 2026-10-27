@@ -62,14 +62,49 @@ moran.test(
 # Randomization test with 999 permutations
 set.seed(5080)
 
-moran.mc(
+global_moran <- moran.mc(
   philly$LNMEDHVAL,
   queen_weights,
   nsim = 999,
   zero.policy = TRUE
 )
 ```
+```{r}
+global_moran_res <- global_moran$res
+hist(global_moran_res, freq = 10000000, nclass=100)
+abline(v=moran(philly$LNMEDHVAL, queen_weights, n = length(queen_weights$neighbours), S0=Szero(queen_weights))$`I`, col='red')
+
+```
+
+
+
 ### LISA: Local Moran's I 
+```{r}
+
+lisa <- localmoran(
+  philly$LNMEDHVAL,
+  queen_weights,
+  zero.policy = TRUE
+)
+
+philly$local_I <- lisa[, "Ii"]
+philly$local_p <- lisa[, "Pr(z != E(Ii))"]
+
+# Map local Moran's I p-values
+tm_shape(philly) +
+  tm_polygons(
+    fill = "local_p",
+    fill.scale = tm_scale_intervals(
+      breaks = c(0, 0.001, 0.01, 0.05, 1),
+      values = c("darkblue", "blue", "lightblue", "pink"),
+      labels = c("p < 0.001", "p < 0.01", "p < 0.05", "Not significant")
+    ),
+    fill.legend = tm_legend(title = "p-value")
+  ) +
+  tm_title("LISA P-Value Map: Median House Values")
+```
+
+
 ```{r}
 lisa <- localmoran(
   philly$LNMEDHVAL,
@@ -81,16 +116,33 @@ lisa <- localmoran(
 philly$local_I <- lisa[, "Ii"]
 philly$local_p <- lisa[, "Pr(z != E(Ii))"]
 
-# Map local Moran's I
+# Standardize the variable and compute its spatial lag (neighbors' average)
+philly$z_val <- as.numeric(scale(philly$LNMEDHVAL))
+philly$lag_z <- lag.listw(queen_weights, philly$z_val, zero.policy = TRUE)
+
+# Classify into quadrants, only where p < 0.05
+sig <- 0.05
+philly$cluster <- "Not significant"
+philly$cluster[philly$z_val > 0 & philly$lag_z > 0 & philly$local_p < sig] <- "High-High"
+philly$cluster[philly$z_val < 0 & philly$lag_z < 0 & philly$local_p < sig] <- "Low-Low"
+philly$cluster[philly$z_val > 0 & philly$lag_z < 0 & philly$local_p < sig] <- "High-Low"
+philly$cluster[philly$z_val < 0 & philly$lag_z > 0 & philly$local_p < sig] <- "Low-High"
+
+philly$cluster <- factor(
+  philly$cluster,
+  levels = c("High-High", "Low-Low", "High-Low", "Low-High", "Not significant")
+)
+
+# Map the clusters
 tm_shape(philly) +
   tm_polygons(
-    "local_I",
-    palette = "Viridis",
-    style = "quantile",
-    title = "Local Moran's I"
+    "cluster",
+    palette = c("#d7191c", "#2c7bb6", "#fdae61", "#abd9e9", "grey90"),
+    title = "LISA Cluster",
+    drop.levels = FALSE   # keep all categories in the legend
   ) +
   tm_layout(
-    title = "Local Spatial Autocorrelation in Median House Values"
+    title = "LISA Clusters of Median House Values"
   )
 ```
 
@@ -120,7 +172,7 @@ philly$OLS_PRED <- fitted(ols_model)
 philly$OLS_RESID <- residuals(ols_model)
 ```
 
-### test OLD residuals for spatial autocorrelation 
+### test OLS residuals for spatial autocorrelation 
 ```{r}
 # Moran's I test for OLS residuals
 moran.test(
