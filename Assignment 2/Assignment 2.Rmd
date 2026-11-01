@@ -1,9 +1,32 @@
 ---
-title: "Assignment 2"
-output: html_document
-editor_options: 
-  markdown: 
-    wrap: 72
+title: "Using Spatial Lag, Spatial Error, and Geographically Weighted Regression to Predict Median House Values in Philadelphia Block Groups"
+subtitle: "CPLN 671 / MUSA 5000: Statistics and Data Mining"
+author: "Sara Cerami, Gautami Kasat, Tegan Lochner"
+date: "November 1, 2026"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+    theme: readable
+mainfont: "Calibri"
+fontsize: 12pt
+geometry: margin=1in
+linkcolor: blue
+toccolor: blue
+header-includes:
+  - \usepackage{float}
+  - \usepackage{booktabs}
+  - \usepackage{caption}
+  - \captionsetup{font=it, justification=centering}
+  - \floatplacement{figure}{H}
 ---
 
 ### load the data
@@ -482,15 +505,15 @@ gwr_results <- gwr_results %>%
 
 gwr_results <- gwr_results %>%
   mutate(
-    ratio_category = case_when(
+    ratio_category_PCTBACHMOR = case_when(
       ratio_PCTBACHMOR < -2 ~ "Below -2",
       ratio_PCTBACHMOR < 0  ~ "-2 to 0",
       ratio_PCTBACHMOR <= 2 ~ "0 to 2",
       ratio_PCTBACHMOR > 2  ~ "Above 2",
       TRUE ~ NA_character_
     ),
-    ratio_category = factor(
-      ratio_category,
+    ratio_category_PCTBACHMOR = factor(
+      ratio_category_PCTBACHMOR,
       levels = c(
         "Below -2",
         "-2 to 0",
@@ -501,7 +524,7 @@ gwr_results <- gwr_results %>%
   )
 
 ggplot(gwr_results) +
-  geom_sf(aes(fill = ratio_category), color = NA) +
+  geom_sf(aes(fill = ratio_category_PCTBACHMOR), color = NA) +
   scale_fill_manual(
     values = c(
       "Below -2" = "darkred",
@@ -514,6 +537,140 @@ ggplot(gwr_results) +
   ) +
   labs(
     title = "Local Coefficient-to-SE Ratio: Bachelor's Degree"
+  ) +
+  theme_minimal()
+```
+```{r}
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_PCTVACANT =
+      PCTVACANT / PCTVACANT_SE
+  )
+
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_category_PCTVACANT = case_when(
+      ratio_PCTVACANT < -2 ~ "Below -2",
+      ratio_PCTVACANT < 0  ~ "-2 to 0",
+      ratio_PCTVACANT <= 2 ~ "0 to 2",
+      ratio_PCTVACANT > 2  ~ "Above 2",
+      TRUE ~ NA_character_
+    ),
+    ratio_category_PCTVACANT = factor(
+      ratio_category_PCTVACANT,
+      levels = c(
+        "Below -2",
+        "-2 to 0",
+        "0 to 2",
+        "Above 2"
+      )
+    )
+  )
+
+ggplot(gwr_results) +
+  geom_sf(aes(fill = ratio_category_PCTVACANT), color = NA) +
+  scale_fill_manual(
+    values = c(
+      "Below -2" = "darkred",
+      "-2 to 0" = "pink",
+      "0 to 2" = "lightblue",
+      "Above 2" = "darkblue"
+    ),
+    na.value = "grey80",
+    name = "Coefficient / SE"
+  ) +
+  labs(
+    title = "Local Coefficient-to-SE Ratio: Percentage of Vacant Households"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_PCTSINGLES =
+      PCTSINGLES / PCTSINGLES_SE
+  )
+
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_category_PCTSINGLES = case_when(
+      ratio_PCTSINGLES < -2 ~ "Below -2",
+      ratio_PCTSINGLES < 0  ~ "-2 to 0",
+      ratio_PCTSINGLES <= 2 ~ "0 to 2",
+      ratio_PCTSINGLES > 2  ~ "Above 2",
+      TRUE ~ NA_character_
+    ),
+    ratio_category_PCTSINGLES = factor(
+      ratio_category_PCTSINGLES,
+      levels = c(
+        "Below -2",
+        "-2 to 0",
+        "0 to 2",
+        "Above 2"
+      )
+    )
+  )
+
+ggplot(gwr_results) +
+  geom_sf(aes(fill = ratio_category_PCTSINGLES), color = NA) +
+  scale_fill_manual(
+    values = c(
+      "Below -2" = "darkred",
+      "-2 to 0" = "pink",
+      "0 to 2" = "lightblue",
+      "Above 2" = "darkblue"
+    ),
+    na.value = "grey80",
+    name = "Coefficient / SE"
+  ) +
+  labs(
+    title = "Local Coefficient-to-SE Ratio: Percentage of Vacant Households"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_LNNBELPOV =
+      LNNBELPOV / LNNBELPOV_SE
+  ) 
+
+gwr_results <- gwr_results %>%
+  mutate(
+    ratio_category_LNNBELPOV = case_when(
+      ratio_LNNBELPOV < -2 ~ "Below -2",
+      ratio_LNNBELPOV < 0  ~ "-2 to 0",
+      ratio_LNNBELPOV <= 2 ~ "0 to 2",
+      ratio_LNNBELPOV > 2  ~ "Above 2",
+      TRUE ~ NA_character_
+    ),
+    ratio_category_LNNBELPOV = factor(
+      ratio_category_LNNBELPOV,
+      levels = c(
+        "Below -2",
+        "-2 to 0",
+        "0 to 2",
+        "Above 2"
+      )
+    )
+  )
+
+ggplot(gwr_results) +
+  geom_sf(aes(fill = ratio_category_LNNBELPOV), color = NA) +
+  scale_fill_manual(
+    values = c(
+      "Below -2" = "darkred",
+      "-2 to 0" = "pink",
+      "0 to 2" = "lightblue",
+      "Above 2" = "darkblue"
+    ),
+    na.value = "grey80",
+    name = "Coefficient / SE"
+  ) +
+  labs(
+    title = "Local Coefficient-to-SE Ratio: Percentage of Vacant Households"
   ) +
   theme_minimal()
 ```
@@ -556,6 +713,9 @@ saveRDS(
   "Philadelphia_Regression_Models.rds"
 )
 ```
+
+**Introduction**
+
 
 **Methods start**
 

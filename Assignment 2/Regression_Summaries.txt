@@ -25,7 +25,8 @@ F-statistic: 758.1 on 5 and 1714 DF,  p-value: < 2.2e-16
 
 SPATIAL LAG MODEL
 
-Call:lagsarlm(formula = model_formula, data = philly, listw = queen_weights, 
+Call:
+lagsarlm(formula = model_formula, data = philly, listw = queen_weights, 
     method = "eigen", zero.policy = TRUE)
 
 Residuals:
@@ -58,7 +59,8 @@ test value: 49.351, p-value: 2.1404e-12
 
 SPATIAL ERROR MODEL
 
-Call:errorsarlm(formula = model_formula, data = philly, listw = queen_weights, 
+Call:
+errorsarlm(formula = model_formula, data = philly, listw = queen_weights, 
     method = "eigen", zero.policy = TRUE)
 
 Residuals:
