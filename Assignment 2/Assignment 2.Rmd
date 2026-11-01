@@ -1,9 +1,13 @@
 ---
 title: "Assignment 2"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-### load the data 
+### load the data
+
 ```{r}
 install.packages("GWmodel")
 
@@ -16,15 +20,20 @@ library(tidyverse)
 library(tmap)
 library(broom)
 ```
-### load the shapefile 
+
+### load the shapefile
+
 ```{r}
 philly <- st_read(
   "RegressionDataFiles.shp"
 )
 ```
-logaraithmic variables were already created in assignment 1, move onto next step
+
+logaraithmic variables were already created in assignment 1, move onto
+next step
 
 ### Queen-contiguity spatial weights
+
 ```{r}
 # Check the coordinate system
 st_crs(philly)
@@ -50,7 +59,8 @@ summary(queen_nb)
 summary(card(queen_nb))
 ```
 
-### Global Moran's I for median house values 
+### Global Moran's I for median house values
+
 ```{r}
 # Global Moran's I
 moran.test(
@@ -69,6 +79,7 @@ global_moran <- moran.mc(
   zero.policy = TRUE
 )
 ```
+
 ```{r}
 global_moran_res <- global_moran$res
 hist(global_moran_res, freq = 10000000, nclass=100)
@@ -76,9 +87,8 @@ abline(v=moran(philly$LNMEDHVAL, queen_weights, n = length(queen_weights$neighbo
 
 ```
 
+### LISA: Local Moran's I
 
-
-### LISA: Local Moran's I 
 ```{r}
 
 lisa <- localmoran(
@@ -103,7 +113,6 @@ tm_shape(philly) +
   ) +
   tm_title("LISA P-Value Map: Median House Values")
 ```
-
 
 ```{r}
 lisa <- localmoran(
@@ -147,6 +156,7 @@ tm_shape(philly) +
 ```
 
 ### OLS Regression
+
 ```{r}
 # Model formula
 model_formula <- LNMEDHVAL ~
@@ -166,13 +176,15 @@ ols_model <- lm(
 summary(ols_model)
 ```
 
-### save the fitted values and residuals 
+### save the fitted values and residuals
+
 ```{r}
 philly$OLS_PRED <- fitted(ols_model)
 philly$OLS_RESID <- residuals(ols_model)
 ```
 
-### test OLS residuals for spatial autocorrelation 
+### test OLS residuals for spatial autocorrelation
+
 ```{r}
 # Moran's I test for OLS residuals
 moran.test(
@@ -191,7 +203,8 @@ moran.mc(
 )
 ```
 
-### weighted residuals and scatterplot 
+### weighted residuals and scatterplot
+
 ```{r}
 philly$WT_RESID <- lag.listw(
   queen_weights,
@@ -222,7 +235,8 @@ ggplot(
   theme_minimal()
 ```
 
-### spatial lag model 
+### spatial lag model
+
 ```{r}
 lag_model <- lagsarlm(
   model_formula,
@@ -235,7 +249,8 @@ lag_model <- lagsarlm(
 summary(lag_model)
 ```
 
-### save residuals and test for spatial autocorrelation 
+### save residuals and test for spatial autocorrelation
+
 ```{r}
 philly$LAG_RESID <- residuals(lag_model)
 
@@ -256,6 +271,7 @@ moran.mc(
 ```
 
 ### run spatial error model
+
 ```{r}
 error_model <- errorsarlm(
   model_formula,
@@ -269,6 +285,7 @@ summary(error_model)
 ```
 
 ### test the residuals
+
 ```{r}
 philly$ERROR_RESID <- residuals(error_model)
 
@@ -289,6 +306,7 @@ moran.mc(
 ```
 
 ### compare the three regression models
+
 ```{r}
 model_comparison <- tibble(
   Model = c("OLS", "Spatial Lag", "Spatial Error"),
@@ -308,7 +326,9 @@ model_comparison
 ```
 
 ### run geographically weighted regression (GWR)
-#### prepare data 
+
+#### prepare data
+
 ```{r}
 # Project the data
 philly_gwr <- st_set_crs(philly, 2272)
@@ -321,6 +341,7 @@ st_crs(philly_gwr)
 ```
 
 #### select bandwidth
+
 ```{r}
 # Select bandwidth using AICc
 gwr_bandwidth <- bw.gwr(
@@ -335,6 +356,7 @@ gwr_bandwidth
 ```
 
 #### fit GWR
+
 ```{r}
 gwr_model <- gwr.basic(
   model_formula,
@@ -351,6 +373,7 @@ gwr_model$GW.diagnostic
 ```
 
 #### map local r-squared
+
 ```{r}
 gwr_results <- st_as_sf(gwr_model$SDF)
 
@@ -371,6 +394,7 @@ ggplot(gwr_results) +
 ```
 
 ### test GWR residuals for spatial autocorrelation
+
 ```{r}
 names(gwr_results)
 
@@ -398,6 +422,7 @@ gwr_moran
 ```
 
 ### map local coefficient to standard error ratios
+
 ```{r}
 names(gwr_results)
 
@@ -445,6 +470,7 @@ ggplot(gwr_results) +
   ) +
   theme_minimal()
 ```
+
 REPEAT FOR EACH VARIABLE
 
 ```{r}
@@ -493,20 +519,14 @@ ggplot(gwr_results) +
 ```
 
 ### save results
+
 ```{r}
 # Save shapefile with residuals
-st_write(
-  philly,
-  "RegressionFinal_Results.shp",
-  delete_layer = TRUE
-)
+st_write(philly, "RegressionFinal_Results.gpkg", delete_dsn = TRUE)
 
 # Save GWR local coefficients and diagnostics
-st_write(
-  gwr_results,
-  "GWR_Results.shp",
-  delete_layer = TRUE
-)
+
+st_write(gwr_results, "GWR_Results.gpkg", delete_dsn = TRUE)
 
 # Save regression summaries to a text file
 sink("Regression_Summaries.txt")
@@ -536,4 +556,388 @@ saveRDS(
   "Philadelphia_Regression_Models.rds"
 )
 ```
+
+**Methods start**
+
+The 1st Law of Geography states that near things are more related than
+distant things. Moran’s I measures the degree of spatial autocorrelation
+in our data, telling us whether data points with similar values are near
+each other. The Moran’s I formula produces one number that explains
+whether our data is positively autocorrelated (positive values, data
+with similar values are near to each other), negatively autocorrelated
+(negative values, data with high values are near to values with low
+values), or have no spatial autocorrelation (very close to 0 or, more
+precisely -1/(n-1), the data is randomly scattered). The formula is as
+follows:
+
+$$I = \frac{n}{\sum_{i=1}^{n}\sum_{j=1}^{n} w_{ij}} \cdot \frac{\sum_{i=1}^{n}\sum_{j=1}^{n} w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^{n}(x_i - \bar{x})^2}$$
+
+The explanation of the terms is as follows:
+
+- $n$: the number of spatial units (for this model it is block groups)
+- $x_i$: the value of the variable at location $i$
+- $x_j$: the value of the variable at location $j$
+- $\bar{x}$: the mean of the variable across $n$ locations
+- $w_{ij}$: the spatial weight between locations $i$ and $j$ taken from
+  the weight matrix
+- $\sum_{i}\sum_{j} w_{ij}$: the sum of all weights
+- $(x_i - \bar{x}) (x_j - \bar{x})$: the output of deviations from the
+  mean
+- $\sum_{i}(x_i - \bar{x})^2$: the sum of squared deviations from the
+  mean, which shows the total variation in the variable
+
+Throughout our report, we used a Queen contiguity weight matrix, meaning
+we defined neighbors as block groups that share any point along borders.
+Statisticians often use multiple spatial weight matrices in analyses to
+measure the efficacy of their model. Given the various methods for
+defining neighbors in spatial statistics, this gives the statistician
+more tools to verify whether their model produces consistent results
+with different spatial weight matrices, or whether the result is a
+product of the specific spatial weight matrix they chose.
+
+We use Moran’s I as a statistical test to determine if there is spatial
+autocorrelation and if so, whether the data is positively or negatively
+spatially autocorrelated. Our Moran’s I value was .79, indicating
+positive spatial autocorrelation. Typically, negative spatial
+autocorrelation ranges from -1 to near 0, and positive spatial
+autocorrelation ranges from near 0 to 1. This shows that our data is
+spatially clustered; in other words, data points with high values are
+close to other data points with high values, and data points with low
+values are near other points with low values.
+
+We then want to know whether this pattern is statistically significant
+or if it could have occurred by chance. The null hypothesis is that
+there is no spatial autocorrelation, meaning there is no spatial pattern
+to our data. The alternative hypothesis is that there is positive
+autocorrelation. It is worth noting that the alternative hypothesis is
+the presence of positive autocorrelation (not negative) because,
+consistent with the First Law of Geography, we expect positive spatial
+autocorrelation in geographic data and have thus, decided to run a
+one-sided test. To test our hypothesis, we use a permutation test, which
+takes all observed values, shuffles them, randomly reassigns them to the
+map, and then recalculates Moran’s I. We repeat this 999 times. If fewer
+than 5% of the 999 random permuted values are as large as or larger than
+the originally observed Moran’s I value (when $/alpha$ = .05), we can
+reject the null hypothesis. We calculated a pseudo p-value of .001,
+meaning none of the 999 permuted values were as large or larger than the
+original Moran’s I value. This indicates significance, and thus a we can
+reject the null hypothesis.
+
+The limitation of using the global Moran’s I is that it is a single
+number that represents the entire data set, it does not indicate where
+the spatial autocorrelation is. It tells us simply that spatial
+clustering is happening. To identify more localized patterns of spatial
+autocorrelation, we run Local Moran’s I, also known as the Local
+Indicator of Spatial Association (LISA). Instead of measuring the
+overall pattern of spatial autocorrelation like we do for the global
+Moran’s I, the LISA goes block by block, calculating how similar that
+block group is to the average of its neighbors.
+
+Although the significance testing for the local Moran’s I works
+differently from the permutation test we used for the global Moran’s I,
+it answers the same question: is this observation unusual compared to
+what a random distribution of data would produce? The following code
+chunk calculates the local Moran’s I for each block group, compares each
+value to its expected value under spatial randomness using a z-score,
+and then derives a p-value from that z-score.
+
+lisa \<- localmoran( philly\$LNMEDHVAL, queen_weights, zero.policy =
+TRUE )
+
+philly$local_I <- lisa[, "Ii"]
+philly$local_p \<- lisa[, "Pr(z != E(Ii))"]
+
+Because the null hypothesis assumes no spatial autocorrelation, the test
+calculates what Local Moran’s I is expected to be if that were true. It
+also calculates how much it would vary by chance alone. Then it compares
+the observed Local Moran’s I value to the expected value using a
+z-score. This measures how many standard deviations the observed value
+is from the expected value if the null hypothesis were true.
+
+We then mapped the LISA p-values. The map shows significant p-values in
+dark blue (p \< .001), blue (p \< .01), and light blue (p \< .05), and
+not significant values in pink (p ≥ .05). Pink means that we cannot tell
+if that block group is part of a spatial pattern. There is not enough
+evidence to say whether the block group is similar or different from its
+neighbors, but the test indicates that it could conceivably happen by
+chance alone.
+
+As previously noted, neighbors in our model are defined by the Queen
+matrix. Based on its relationship to the average of its neighbors, each
+block group falls into one of four categories. We have found the
+following schema helpful in conceptualizing these categories.
+
+High-High: I am a high value block group and my neighbors are high value
+block groups Low-Low: I am a low value block group and my neighbors are
+low value block groups High-Low: I am a high value block group and my
+neighbors are low value block groups Low-High: I am a low value block
+group and my neighbors are high value block groups
+
+We mapped these values, producing a result that appeared similar to the
+LISA P-Value Map.
+
+Ordinary Least Squares (OLS) regression is a type of linear regression
+used to model the relationship between a dependent variable and one or
+more independent variables. Statisticians use OLS for two primary
+purposes: inference and prediction. Inferential analysis uses a sample
+to draw conclusions about a population, and predictive analysis uses the
+model to predict outcomes for unseen data. OLS chooses coefficients that
+minimize the sum of squared residuals, defining the line or plane that
+best fits the data. The OLS assumptions are as follows:
+
+**Linearity.** The relationship between each predictor and the dependent
+variable is assumed to be linear. If the true relationship curves, a
+straight line will misstate the effect across parts of the range.
+
+**Independence of observations.** Observations, and therefore their
+residuals, are assumed to be independent of one another.
+
+**Normality of residuals.** The errors are assumed to be normally
+distributed with a mean of zero. Note that this applies to the residuals
+rather than to the raw variables, which need not be normal themselves.
+
+**Homoscedasticity.** The variance of the errors is assumed to be constant
+across all levels of the predicted values. If instead the errors widen
+or narrow systematically, a condition called heteroscedasticity, the
+standard errors and the significance tests built on them may be
+unreliable.
+
+**Multicollinearity.** Predictors can be correlated with each other, but not
+so strongly (e.g., \|r\| \> 0.8, or VIF above 4, and especially above
+10) that the model can’t separate their effects. Severe
+multicollinearity makes coefficients unstable and inflates their
+standard errors.
+
+**Observations.** No fewer than 10 observations per predictor.
+
+Our previous report goes further into depth about OLS, which you can
+read here.
+
+When the data has a spatial component, the OLS assumption that errors are
+independent is often violated. We can test this by calculating the
+Moran’s I of the residuals, which analyzes spatial autocorrelation of
+the residuals. Another way to test OLS residuals for spatial
+autocorrelation is to regress them on nearby residuals. If the
+independence assumption holds, block group’s residuals shouldn’t have
+much to do with their neighbors. We visualized this by creating a
+scatterplot of the OLS residuals and the weighted average of neighboring
+OLS residuals. The slope of the regression line was .731, for every one
+unit increase in the average residual of a block group’s neighbor, that
+block group’s own residual is expected to increase by about .73. Simply
+put, block groups whose neighbors were under or over predicted, tend to
+be under or over predicted in the same direction. The first step in
+calculating the slope is finding the average of the OLS residuals of
+neighboring block groups. Then the OLS residuals are regressed on the
+average of the neighbor’s OLS residuals. The slope measures the extent
+to which the two variables move together, divided by the variance of the
+neighbors’ average residuals. Plainly, it is the expected change of the
+block group’s residuals for each one-unit increase in the average
+residual of its neighbor.
+
+R, the tool we used to run the regression, can also test other
+regression assumptions, such as homoscedasticity, which is also related
+to the assumption of independence of errors. R has specific packages
+designed to run the Breusch-Pagan, Koenker-Bassett, and White test,
+which determine whether the variance of the residuals changes with the
+predictors. In these tests, the null hypothesis is that the errors are
+homoscedastic and the alternative hypothesis is that the errors are
+heteroscedastic. A p-value < .05 means we reject the null hypothesis,
+while a p-value > .05 means we fail to reject the null hypothesis,
+indicating there is no significant evidence of heteroscedasticity.
+
+R can also test the assumption of normality of errors with a package
+that runs the Jarque-Bera test. The null hypothesis is that the errors
+are normally distributed and the alternative hypothesis is that the
+errors are not normally distributed. A p-value < .05 means we reject
+the null hypothesis and conclude that the residuals are not normal,
+while a p-value > .05 means we fail to reject the null hypothesis and
+conclude that the residuals are normal.
+
+We used R to run spatial lag and spatial error regressions. Unlike OLS,
+the spatial lag model assumes spatial dependence. The model accounts for
+this dependence by adding an extra predictor to the OLS model: the
+average dependent variable of each neighbor, or in our case, the average
+house value of each block group’s neighbors (W * LNMEDHVAL).
+
+$$\begin{aligned}
+\text{LNMEDHVAL} = \; & \rho W \cdot \text{LNMEDHVAL} + \beta_0 + \beta_1 \text{PCTBACHMOR} + \beta_2 \text{PCTVACANT} \\
+& + \beta_3 \text{PCTSINGLES} + \beta_4 \text{LNNBELPOV} + \beta_5 \text{MEDHHINC} + \varepsilon
+\end{aligned}$$
+
+**W** is our queen weights and **LNMEDHVAL** is our dependent
+variable, log median house values for all block groups 
+
+Which means,
+
+$W * LNMEDHVAL$ is the spatially lagged dependent variable: the average log
+median house value of each block group’s neighbors. 
+
+$\rho$ measures the strength of spatial dependence: how much a block group’s house value
+depends on its neighbors’ house values.
+
+$\beta_0$ is the intercept, $\beta_1$ through $\beta_5$ are the coefficients for each predictor
+in the error term
+
+We also used a spatial error model in our analysis, which accounts for
+spatial dependencies in the unobserved factors that could impact our
+dependent variable. In contrast to the spatial lag model that says house
+value is influenced directly by surrounding house values, the spatial
+error model says that house values in a similar region are subject to
+the same unobserved conditions.
+
+$$ \begin{aligned} \text{LNMEDHVAL} = \; & \beta_0 + \beta_1 \text{PCTBACHMOR} + \beta_2 \text{PCTVACANT} \\& + \beta_3 \text{PCTSINGLES} + \beta_4 \text{LNNBELPOV} + \beta_5 \text{MEDHHINC} + \varepsilon \end{aligned} $$
+
+$$ \varepsilon = \lambda W \varepsilon + u $$
+
+* $\beta_0$ is the intercept, and $\beta_1$ through $\beta_5$ are the coefficients for each
+  predictor.
+* $\varepsilon$ is the error term from the main regression, the part of house values
+  the predictors don’t explain.
+* $W$ is the spatially lagged error: the average error of each block
+  group’s neighbors, as defined by the Queen matrix.
+* $\lambda$ measures how strongly a block group’s error is related to its
+  neighbors’ errors.
+* $u$ is the remaining random error, which should be independent and free
+  of spatial autocorrelation. 
+  
+The other OLS assumptions also pertain to Spatial Lag and Spatial Error models, 
+with the exception of spatial independence of observations. The goal of these 
+models is to account for spatial dependence, resulting in a better fitting 
+model withhigher rates of reliability. We are able to measure the accuracy of 
+our model with various metrics. First, we can look at the Moran’s I of 
+residuals. The value should be closer to 0 than the OLS Moran’s I of residuals 
+and ideally not statistically significant. If the spatial models work, the 
+spatial lag term (ρ) or spatial error term (λ) will capture the spatial 
+patterns, instead of leaving them in the residuals. We also compare each model 
+by using the Akaike Information Criterion/Schwarz Criterion, Log Likelihood, 
+and the Likelihood Ratio Test. These criteria are only valid when the models 
+being compared share the same dependent variable and are fit to the same set of
+observations, which is the case for all three models in this analysis.Each 
+criterion also has its own characteristics and requirements, which are 
+discussed below. The Akaike Information Criterion/Schwarz Criterion are measures 
+of goodness of fit. We use them when we want to compare models while accounting 
+for complexity because it penalizes each additional parameter. When comparing 
+AIC across models, we opt for a lower value because it indicates the model fits 
+well without unnecessary parameters. AIC is only useful for comparing models. We
+can use the AIC to compare nested and non-nested models.
+
+We use Log Likelihood as a measure of fit, by scoring how well the model matches 
+the observed data. A higher score indicates that the observed data is more 
+probably under the model, meaning a better fit. We get the score by multiplying 
+the likelihood value of each block group In our data, this would require 
+multiplying 1,720 block group values, resulting in a number so extreme, it 
+could easily become unmanageable. Instead, the Log Likelihood, takes the log of 
+each value, which by the rules of logarithms, turns the multiplication into
+addition. Because Log Likelihood doesn’t penalize additional parameters, it is 
+important to use it alongside AIC. 
+
+Log Likelihood can be used when comparing nested and non-nested models. The 
+Likelihood Ratio Test measures if a more complex model fits the data 
+significantly better than a simpler one. It uses log likelihood to measure the 
+fit of two models, one more complex than the other, for example a model that 
+accounts for spatial dependency and an OLS model. It then compares the two log 
+likelihood scores and runs a test to check whether the difference is big enough 
+to reliably not be attributable to random chance. The Likelihood Ratio statistic 
+follows a chi-squared distribution where the degrees of freedom are equal to
+the difference in the number of parameters between the two models. For our 
+model, the df = 1 because each spatial model adds one parameter. The Likelihood 
+Ratio Test can only be used on nested models. Because of this, we cannot compare 
+spatial lag and spatial error models. In this case, they can only be compared to 
+OLS. The null hypothesis in the Likelihood Ratio Test is always that the complex 
+model is not a better fit than the simpler model. Using the spatial lag and 
+spatial error models as examples, the null and alternative hypotheses are as
+follows: 
+
+For the spatial lag model:
+  
+* $H₀: ρ = 0$ The spatial lag model is not a better fit than OLS.
+* $H₁: ρ ≠ 0$ The spatial lag model is a better fit than OLS. 
+
+For the spatial error model:
+
+* $H₀: λ = 0$ The spatial error model is not a better fit than OLS.
+* $H₁: λ ≠ 0$ The spatial error model is a better fit than OLS. If the
+  p-value is less than 0.05, we reject the null hypothesis and conclude
+  that the spatial model fits significantly better than OLS.
+
+We ran our Geographically Weighted Regression (GWR) analyses in R. GWR
+runs a separate local regression for each block group, using a
+proximity-based weighting scheme that gives closer neighbors more
+influence on the local regression coefficient than farther neighbors.
+Simpson’s paradox describes the seemingly enigmatic condition in which a
+global pattern in the dataset disappears or reverses when the data is
+divided into subgroups. A single global regression may misrepresent
+local relationships that cannot be captured with a single statistic.
+This paradox is common in spatial data because relationships between the
+dependent variable and predictors vary across space, a state called
+spatial non-stationarity. GWR uniquely addresses this. In the case of
+our model, the relationship between vacancy and house values may differ
+substantially between neighborhoods in Philadelphia, but we wouldn’t be
+able to tell based on a single global statistic. 
+
+GWR uses what is called a bandwidth to determine which neighboring observations 
+are included in the local analysis. There are two types of bandwidths: fixed and
+adaptive. Fixed bandwidth uses a fixed distance from the regression
+point outward in all directions, this means the area also remains
+constant for each local regression. In other words, a fixed bandwidth
+uses the same sized net to capture its neighboring observations and it
+is most effective when observations are relatively uniformly distributed
+across space. Conversely, adaptive bandwidth is best used when
+observations vary widely across space, when events are concentrated in
+one area and sparse in others. Unlike the fixed bandwidth’s same sized
+net analogy, adaptive bandwidth’s range is dictated by the number of
+neighboring observations it captures. The net’s size may change, but the
+number of neighboring observations remains the same. We use adaptive
+bandwidth in our model because the observations in our data are not
+uniformly distributed across space, they vary quite a bit given where in
+the city the block group is. Block groups are small and dense in Center
+City and larger in the Northeast and Northwest areas of Philadelphia. If
+we were to use fixed bandwidth for this data, we would capture many
+block groups downtown and very few at the edges of th city. 
+
+GWR runs by attributing a value to each coefficient at each location. This means
+that our model ran a weighted regression for every 1,720 block groups.
+It does this by selecting a block group, assigning weights to nearby
+block groups based on the bandwidth, running a weighted regression using
+those weights, saving those coefficients as those block groups local
+coefficients, and then repeating that process for each block group. The
+GWR equation for our model is as follows:
+
+$$\begin{aligned}
+\text{LNMEDHVAL}_i = \; & \beta_0(u_i, v_i) + \beta_1(u_i, v_i)\,\text{PCTBACHMOR}_i + \beta_2(u_i, v_i)\,\text{PCTVACANT}_i \\
+& + \beta_3(u_i, v_i)\,\text{PCTSINGLES}_i + \beta_4(u_i, v_i)\,\text{LNNBELPOV}_i + \beta_5(u_i, v_i)\,\text{MEDHHINC}_i + \varepsilon_i
+\end{aligned}$$
+
+* $i$ refers to an individual block group
+* $(ui,vi)$ are the coordinates of block group i
+* $\beta_0(ui,vi)$ is the local intercept at block group i
+- $\beta_1(ui,vi)$ through $\beta_5(ui,vi)$ are the local coefficients for each
+  predictor at block group i, which can vary across space
+- $\varepsilon_i$ is the error term for block group i.
+
+The local coefficients are estimated using weighted least squares:
+$$ \hat{\beta}(u_i, v_i) = (X^T W_i X)^{-1} X^T W_i y $$ 
+
+
+The OLS assumptions are the same for GWR. One assumption even becomes
+more stringent: no severe multicollinearity. This is because GWR makes
+multicollinearity more likely and potentially more potent. Each local
+regression relies primarily on neighboring observations, which means
+limited variation and less total amount of data per regression point.
+Also, because nearby block groups tend to have similar characteristics,
+predictors that are only moderately correlated across the city can be
+highly correlated within a local neighborhood. When predictors are
+highly correlated, the regression cannot identify which variable
+produces which outcome, resulting in unstable coefficients and
+potentially creating spatial patterns that may look deceptively
+meaningful. We can check for multicollinearity using the condition
+number. The condition number measures the degree of multicollinearity in
+a set of predictors. It is calculated for each local regression and if
+it reads greater than 30, we generally cannot trust its results. While
+stationarity isn’t named as a formal assumption of OLS, it is implicit
+in the mechanics of the equation. GWR, also implies stationarity,
+although it takes on a different meaning. OLS assumes global
+stationarity; GWR assumes local stationarity.
+
+**Methods end**
 

@@ -1,0 +1,114 @@
+OLS MODEL
+
+Call:
+lm(formula = model_formula, data = philly)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-1.80670 -0.18639  0.02634  0.20153  2.37249 
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  1.062e+01  6.068e-02 174.998  < 2e-16 ***
+PCTBACHMOR   1.803e-02  5.740e-04  31.413  < 2e-16 ***
+PCTVACANT   -1.592e-02  9.769e-04 -16.300  < 2e-16 ***
+PCTSINGLES   5.388e-04  7.051e-04   0.764 0.444842    
+LNNBELPOV   -3.130e-02  9.034e-03  -3.465 0.000544 ***
+MEDHHINC     9.438e-06  7.839e-07  12.040  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.352 on 1714 degrees of freedom
+Multiple R-squared:  0.6886,	Adjusted R-squared:  0.6877 
+F-statistic: 758.1 on 5 and 1714 DF,  p-value: < 2.2e-16
+
+
+SPATIAL LAG MODEL
+
+Call:lagsarlm(formula = model_formula, data = philly, listw = queen_weights, 
+    method = "eigen", zero.policy = TRUE)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-1.631115 -0.115067  0.009855  0.131453  1.756129 
+
+Type: lag 
+Coefficients: (asymptotic standard errors) 
+               Estimate  Std. Error z value  Pr(>|z|)
+(Intercept)  3.9420e+00  1.9901e-01 19.8075 < 2.2e-16
+PCTBACHMOR   7.5408e-03  5.2009e-04 14.4990 < 2.2e-16
+PCTVACANT   -7.3008e-03  7.5707e-04 -9.6436 < 2.2e-16
+PCTSINGLES   8.1460e-04  5.2977e-04  1.5377   0.12413
+LNNBELPOV   -1.1350e-02  6.8094e-03 -1.6669   0.09554
+MEDHHINC     4.8694e-06  6.0535e-07  8.0439 8.882e-16
+
+Rho: 0.62416, LR test value: 836.52, p-value: < 2.22e-16
+Asymptotic standard error: 0.018221
+    z-value: 34.256, p-value: < 2.22e-16
+Wald statistic: 1173.5, p-value: < 2.22e-16
+
+Log likelihood: -223.4151 for lag model
+ML residual variance (sigma squared): 0.069916, (sigma: 0.26442)
+Number of observations: 1720 
+Number of parameters estimated: 8 
+AIC: 462.83, (AIC for lm: 1297.4)
+LM test for residual autocorrelation
+test value: 49.351, p-value: 2.1404e-12
+
+
+SPATIAL ERROR MODEL
+
+Call:errorsarlm(formula = model_formula, data = philly, listw = queen_weights, 
+    method = "eigen", zero.policy = TRUE)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-1.8713709 -0.1184584  0.0087332  0.1303555  1.6585077 
+
+Type: error 
+Coefficients: (asymptotic standard errors) 
+               Estimate  Std. Error  z value  Pr(>|z|)
+(Intercept)  1.0682e+01  5.9025e-02 180.9761 < 2.2e-16
+PCTBACHMOR   8.7144e-03  7.3627e-04  11.8359 < 2.2e-16
+PCTVACANT   -5.5516e-03  8.7579e-04  -6.3389 2.314e-10
+PCTSINGLES   1.7674e-03  6.2351e-04   2.8346  0.004589
+LNNBELPOV   -1.5437e-02  7.4476e-03  -2.0728  0.038195
+MEDHHINC     5.0625e-06  6.5201e-07   7.7644 8.216e-15
+
+Lambda: 0.80295, LR test value: 596.7, p-value: < 2.22e-16
+Asymptotic standard error: 0.017022
+    z-value: 47.172, p-value: < 2.22e-16
+Wald statistic: 2225.2, p-value: < 2.22e-16
+
+Log likelihood: -343.3273 for error model
+ML residual variance (sigma squared): 0.074494, (sigma: 0.27294)
+Number of observations: 1720 
+Number of parameters estimated: 8 
+AIC: 702.65, (AIC for lm: 1297.4)
+
+
+GWR DIAGNOSTICS
+$RSS.gw
+[1] 101.3641
+
+$AIC
+[1] 245.9437
+
+$AICc
+[1] 557.9266
+
+$enp
+[1] 309.5991
+
+$edf
+[1] 1410.401
+
+$gw.R2
+[1] 0.8513854
+
+$gwR2.adj
+[1] 0.8187397
+
+$BIC
+[1] 40.00086
+
