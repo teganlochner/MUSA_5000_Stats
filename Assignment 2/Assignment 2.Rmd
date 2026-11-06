@@ -53,8 +53,7 @@ philly <- st_read(
 )
 ```
 
-logaraithmic variables were already created in assignment 1, move onto
-next step
+logaraithmic variables were already created in assignment 1, move onto next step
 
 ### Queen-contiguity spatial weights
 
@@ -256,7 +255,6 @@ plot(fitted(ols_model), philly$STD_RESID,
 abline(h = 0, col = "red")
 ```
 
-
 ### test OLS residuals for spatial autocorrelation
 
 ```{r}
@@ -391,7 +389,6 @@ moran.plot(philly$ERROR_RESID, queen_weights, zero.policy = TRUE,
            main = "Moran's I Scatterplot of Spatial Error Residuals")
 ```
 
-
 ### compare the three regression models
 
 ```{r}
@@ -408,9 +405,6 @@ model_comparison <- tibble(
 knitr::kable(model_comparison, digits = 2,
              caption = "Model Comparison: OLS, Spatial Lag and Spatial Error")
 ```
-
-
-
 
 ### run geographically weighted regression (GWR)
 
@@ -604,6 +598,7 @@ ggplot(gwr_results) +
   ) +
   theme_minimal()
 ```
+
 ```{r}
 gwr_results <- gwr_results %>%
   mutate(
@@ -806,28 +801,22 @@ saveRDS(
   "Philadelphia_Regression_Models.rds"
 )
 ```
+
 \newpage
 
 # Introduction
+
 In Philadelphia, housing values vary substantially. This report examines median house values across Philadelphia using spatial statistical methods to investigate both the relationships between housing values and neighborhood characteristics and the extent to which these relationships exhibit spatial dependence.
 
 In the previous report, ordinary least squares (OLS) regression was used to examine the relationship between median house values and five explanatory variables (predictors): the percentage of residents with a bachelor's degree or higher (PCTBACHMOR), the percentage of vacant properties (PCTVACANT), the percentage of housing units that are detached single family houses (PCTSINGLES), the natural logarithm of the number of people below the poverty line (LNNBELPOV), and median household income (MEDHHINC). The dependent variable is the natural logarithm of median house value (LNMEDHVAL). Although OLS provides a useful baseline for understanding these relationships, its assumption that observations are independent can be problematic when analyzing geographically distributed data. Neighboring census areas may share similar socioeconomic conditions and housing-market characteristics, resulting in spatial autocorrelation that conventional regression models do not adequately address.
 
 The purpose of this report is to extend the previous analysis by applying spatial lag regression, spatial error regression, and geographically weighted regression (GWR). These methods address spatial relationships in different ways: spatial lag regression accounts for dependence in the outcome across neighboring areas, spatial error regression models spatial dependence in unobserved influences, and GWR allows relationships between predictors and housing values to vary geographically.
 
-
 # Methods
 
-The 1st Law of Geography states that near things are more related than
-distant things. Moran’s I measures the degree of spatial autocorrelation
-in our data, telling us whether data points with similar values are near
-each other. The Moran’s I formula produces one number that explains
-whether our data is positively autocorrelated (positive values, data
-with similar values are near to each other), negatively autocorrelated
-(negative values, data with high values are near to values with low
-values), or have no spatial autocorrelation (very close to 0 or, more
-precisely -1/(n-1), the data is randomly scattered). The formula is as
-follows:
+## Spatial Autocorrelation
+
+The 1st Law of Geography states that near things are more related than distant things. Moran’s I measures the degree of spatial autocorrelation in our data, telling us whether data points with similar values are near each other. The Moran’s I formula produces one number that explains whether our data is positively autocorrelated (positive values, data with similar values are near to each other), negatively autocorrelated (negative values, data with high values are near to values with low values), or have no spatial autocorrelation (very close to 0 or, more precisely -1/(n-1), the data is randomly scattered). The formula is as follows:
 
 $$I = \frac{n}{\sum_{i=1}^{n}\sum_{j=1}^{n} w_{ij}} \cdot \frac{\sum_{i=1}^{n}\sum_{j=1}^{n} w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^{n}(x_i - \bar{x})^2}$$
 
@@ -837,373 +826,135 @@ The explanation of the terms is as follows:
 - $x_i$: the value of the variable at location $i$
 - $x_j$: the value of the variable at location $j$
 - $\bar{x}$: the mean of the variable across $n$ locations
-- $w_{ij}$: the spatial weight between locations $i$ and $j$ taken from
-  the weight matrix
+- $w_{ij}$: the spatial weight between locations $i$ and $j$ taken from the weight matrix
 - $\sum_{i}\sum_{j} w_{ij}$: the sum of all weights
-- $(x_i - \bar{x}) (x_j - \bar{x})$: the output of deviations from the
-  mean
-- $\sum_{i}(x_i - \bar{x})^2$: the sum of squared deviations from the
-  mean, which shows the total variation in the variable
+- $(x_i - \bar{x}) (x_j - \bar{x})$: the output of deviations from the mean
+- $\sum_{i}(x_i - \bar{x})^2$: the sum of squared deviations from the mean, which shows the total variation in the variable
 
-Throughout our report, we used a Queen contiguity weight matrix, meaning
-we defined neighbors as block groups that share any point along borders.
-Statisticians often use multiple spatial weight matrices in analyses to
-measure the efficacy of their model. Given the various methods for
-defining neighbors in spatial statistics, this gives the statistician
-more tools to verify whether their model produces consistent results
-with different spatial weight matrices, or whether the result is a
-product of the specific spatial weight matrix they chose.
+Throughout our report, we used a Queen contiguity weight matrix, meaning we defined neighbors as block groups that share any point along borders. Statisticians often use multiple spatial weight matrices in analyses to measure the efficacy of their model. Given the various methods for defining neighbors in spatial statistics, this gives the statistician more tools to verify whether their model produces consistent results with different spatial weight matrices, or whether the result is a product of the specific spatial weight matrix they chose.
 
-We use Moran’s I as a statistical test to determine if there is spatial
-autocorrelation and if so, whether the data is positively or negatively
-spatially autocorrelated. Our Moran’s I value was .79, indicating
-positive spatial autocorrelation. Typically, negative spatial
-autocorrelation ranges from -1 to near 0, and positive spatial
-autocorrelation ranges from near 0 to 1. This shows that our data is
-spatially clustered; in other words, data points with high values are
-close to other data points with high values, and data points with low
-values are near other points with low values.
+We use Moran’s I as a statistical test to determine if there is spatial autocorrelation and if so, whether the data is positively or negatively spatially autocorrelated. Our Moran’s I value was .79, indicating positive spatial autocorrelation. Typically, negative spatial autocorrelation ranges from -1 to near 0, and positive spatial autocorrelation ranges from near 0 to 1. This shows that our data is spatially clustered; in other words, data points with high values are close to other data points with high values, and data points with low values are near other points with low values.
 
-We then want to know whether this pattern is statistically significant
-or if it could have occurred by chance. The null hypothesis is that
-there is no spatial autocorrelation, meaning there is no spatial pattern
-to our data. The alternative hypothesis is that there is positive
-autocorrelation. It is worth noting that the alternative hypothesis is
-the presence of positive autocorrelation (not negative) because,
-consistent with the First Law of Geography, we expect positive spatial
-autocorrelation in geographic data and have thus, decided to run a
-one-sided test. To test our hypothesis, we use a permutation test, which
-takes all observed values, shuffles them, randomly reassigns them to the
-map, and then recalculates Moran’s I. We repeat this 999 times. If fewer
-than 5% of the 999 random permuted values are as large as or larger than
-the originally observed Moran’s I value (when $/alpha$ = .05), we can
-reject the null hypothesis. We calculated a pseudo p-value of .001,
-meaning none of the 999 permuted values were as large or larger than the
-original Moran’s I value. This indicates significance, and thus a we can
-reject the null hypothesis.
+We then want to know whether this pattern is statistically significant or if it could have occurred by chance. The null hypothesis is that there is no spatial autocorrelation, meaning there is no spatial pattern to our data. The alternative hypothesis is that there is positive autocorrelation. It is worth noting that the alternative hypothesis is the presence of positive autocorrelation (not negative) because, consistent with the First Law of Geography, we expect positive spatial autocorrelation in geographic data and have thus, decided to run a one-sided test. To test our hypothesis, we use a permutation test, which takes all observed values, shuffles them, randomly reassigns them to the map, and then recalculates Moran’s I. We repeat this 999 times. If fewer than 5% of the 999 random permuted values are as large as or larger than the originally observed Moran’s I value (when $/alpha$ = .05), we can reject the null hypothesis. We calculated a pseudo p-value of .001, meaning none of the 999 permuted values were as large or larger than the original Moran’s I value. This indicates significance, and thus a we can reject the null hypothesis.
 
-The limitation of using the global Moran’s I is that it is a single
-number that represents the entire data set, it does not indicate where
-the spatial autocorrelation is. It tells us simply that spatial
-clustering is happening. To identify more localized patterns of spatial
-autocorrelation, we run Local Moran’s I, also known as the Local
-Indicator of Spatial Association (LISA). Instead of measuring the
-overall pattern of spatial autocorrelation like we do for the global
-Moran’s I, the LISA goes block by block, calculating how similar that
-block group is to the average of its neighbors.
+The limitation of using the global Moran’s I is that it is a single number that represents the entire data set, it does not indicate where the spatial autocorrelation is. It tells us simply that spatial clustering is happening. To identify more localized patterns of spatial autocorrelation, we run Local Moran’s I, also known as the Local Indicator of Spatial Association (LISA). Instead of measuring the overall pattern of spatial autocorrelation like we do for the global Moran’s I, the LISA goes block by block, calculating how similar that block group is to the average of its neighbors.
 
-Although the significance testing for the local Moran’s I works
-differently from the permutation test we used for the global Moran’s I,
-it answers the same question: is this observation unusual compared to
-what a random distribution of data would produce? The following code
-chunk calculates the local Moran’s I for each block group, compares each
-value to its expected value under spatial randomness using a z-score,
-and then derives a p-value from that z-score.
+Although the significance testing for the local Moran’s I works differently from the permutation test we used for the global Moran’s I, it answers the same question: is this observation unusual compared to what a random distribution of data would produce? The following code chunk calculates the local Moran’s I for each block group, compares each value to its expected value under spatial randomness using a z-score, and then derives a p-value from that z-score.
 
-lisa \<- localmoran( philly\$LNMEDHVAL, queen_weights, zero.policy =
-TRUE )
+lisa \<- localmoran( philly\$LNMEDHVAL, queen_weights, zero.policy = TRUE )
 
 philly$local_I <- lisa[, "Ii"]
 philly$local_p \<- lisa[, "Pr(z != E(Ii))"]
 
-Because the null hypothesis assumes no spatial autocorrelation, the test
-calculates what Local Moran’s I is expected to be if that were true. It
-also calculates how much it would vary by chance alone. Then it compares
-the observed Local Moran’s I value to the expected value using a
-z-score. This measures how many standard deviations the observed value
-is from the expected value if the null hypothesis were true.
+Because the null hypothesis assumes no spatial autocorrelation, the test calculates what Local Moran’s I is expected to be if that were true. It also calculates how much it would vary by chance alone. Then it compares the observed Local Moran’s I value to the expected value using a z-score. This measures how many standard deviations the observed value is from the expected value if the null hypothesis were true.
 
-We then mapped the LISA p-values. The map shows significant p-values in
-dark blue (p \< .001), blue (p \< .01), and light blue (p \< .05), and
-not significant values in pink (p ≥ .05). Pink means that we cannot tell
-if that block group is part of a spatial pattern. There is not enough
-evidence to say whether the block group is similar or different from its
-neighbors, but the test indicates that it could conceivably happen by
-chance alone.
+We then mapped the LISA p-values. The map shows significant p-values in dark blue (p \< .001), blue (p \< .01), and light blue (p \< .05), and not significant values in pink (p ≥ .05). Pink means that we cannot tell if that block group is part of a spatial pattern. There is not enough evidence to say whether the block group is similar or different from its neighbors, but the test indicates that it could conceivably happen by chance alone.
 
-As previously noted, neighbors in our model are defined by the Queen
-matrix. Based on its relationship to the average of its neighbors, each
-block group falls into one of four categories. We have found the
-following schema helpful in conceptualizing these categories.
+As previously noted, neighbors in our model are defined by the Queen matrix. Based on its relationship to the average of its neighbors, each block group falls into one of four categories. We have found the following schema helpful in conceptualizing these categories.
 
-High-High: I am a high value block group and my neighbors are high value
-block groups Low-Low: I am a low value block group and my neighbors are
-low value block groups High-Low: I am a high value block group and my
-neighbors are low value block groups Low-High: I am a low value block
-group and my neighbors are high value block groups
+High-High: I am a high value block group and my neighbors are high value block groups Low-Low: I am a low value block group and my neighbors are low value block groups High-Low: I am a high value block group and my neighbors are low value block groups Low-High: I am a low value block group and my neighbors are high value block groups
 
-We mapped these values, producing a result that appeared similar to the
-LISA P-Value Map.
+We mapped these values, producing a result that appeared similar to the LISA P-Value Map.
 
-Ordinary Least Squares (OLS) regression is a type of linear regression
-used to model the relationship between a dependent variable and one or
-more independent variables. Statisticians use OLS for two primary
-purposes: inference and prediction. Inferential analysis uses a sample
-to draw conclusions about a population, and predictive analysis uses the
-model to predict outcomes for unseen data. OLS chooses coefficients that
-minimize the sum of squared residuals, defining the line or plane that
-best fits the data. The OLS assumptions are as follows:
+## OLS Regression and Assumptions Review 
 
-**Linearity.** The relationship between each predictor and the dependent
-variable is assumed to be linear. If the true relationship curves, a
-straight line will misstate the effect across parts of the range.
+Ordinary Least Squares (OLS) regression is a type of linear regression used to model the relationship between a dependent variable and one or more independent variables. Statisticians use OLS for two primary purposes: inference and prediction. Inferential analysis uses a sample to draw conclusions about a population, and predictive analysis uses the model to predict outcomes for unseen data. OLS chooses coefficients that minimize the sum of squared residuals, defining the line or plane that best fits the data. The OLS assumptions are as follows:
 
-**Independence of observations.** Observations, and therefore their
-residuals, are assumed to be independent of one another.
+**Linearity.** The relationship between each predictor and the dependent variable is assumed to be linear. If the true relationship curves, a straight line will misstate the effect across parts of the range.
 
-**Normality of residuals.** The errors are assumed to be normally
-distributed with a mean of zero. Note that this applies to the residuals
-rather than to the raw variables, which need not be normal themselves.
+**Independence of observations.** Observations, and therefore their residuals, are assumed to be independent of one another.
 
-**Homoscedasticity.** The variance of the errors is assumed to be constant
-across all levels of the predicted values. If instead the errors widen
-or narrow systematically, a condition called heteroscedasticity, the
-standard errors and the significance tests built on them may be
-unreliable.
+**Normality of residuals.** The errors are assumed to be normally distributed with a mean of zero. Note that this applies to the residuals rather than to the raw variables, which need not be normal themselves.
 
-**Multicollinearity.** Predictors can be correlated with each other, but not
-so strongly (e.g., \|r\| \> 0.8, or VIF above 4, and especially above
-10) that the model can’t separate their effects. Severe
-multicollinearity makes coefficients unstable and inflates their
-standard errors.
+**Homoscedasticity.** The variance of the errors is assumed to be constant across all levels of the predicted values. If instead the errors widen or narrow systematically, a condition called heteroscedasticity, the standard errors and the significance tests built on them may be unreliable.
+
+**Multicollinearity.** Predictors can be correlated with each other, but not so strongly (e.g., \|r\| \> 0.8, or VIF above 4, and especially above 10) that the model can’t separate their effects. Severe multicollinearity makes coefficients unstable and inflates their standard errors.
 
 **Observations.** No fewer than 10 observations per predictor.
 
-Our previous report goes further into depth about OLS, which you can
-read here.
+Our previous report goes further into depth about OLS, which you can read here.
 
-When the data has a spatial component, the OLS assumption that errors are
-independent is often violated. We can test this by calculating the
-Moran’s I of the residuals, which analyzes spatial autocorrelation of
-the residuals. Another way to test OLS residuals for spatial
-autocorrelation is to regress them on nearby residuals. If the
-independence assumption holds, block group’s residuals shouldn’t have
-much to do with their neighbors. We visualized this by creating a
-scatterplot of the OLS residuals and the weighted average of neighboring
-OLS residuals. The slope of the regression line was .731, for every one
-unit increase in the average residual of a block group’s neighbor, that
-block group’s own residual is expected to increase by about .73. Simply
-put, block groups whose neighbors were under or over predicted, tend to
-be under or over predicted in the same direction. The first step in
-calculating the slope is finding the average of the OLS residuals of
-neighboring block groups. Then the OLS residuals are regressed on the
-average of the neighbor’s OLS residuals. The slope measures the extent
-to which the two variables move together, divided by the variance of the
-neighbors’ average residuals. Plainly, it is the expected change of the
-block group’s residuals for each one-unit increase in the average
-residual of its neighbor.
+When the data has a spatial component, the OLS assumption that errors are independent is often violated. We can test this by calculating the Moran’s I of the residuals, which analyzes spatial autocorrelation of the residuals. Another way to test OLS residuals for spatial autocorrelation is to regress them on nearby residuals. If the independence assumption holds, block group’s residuals shouldn’t have much to do with their neighbors. We visualized this by creating a scatterplot of the OLS residuals and the weighted average of neighboring OLS residuals. The slope of the regression line was .731, for every one unit increase in the average residual of a block group’s neighbor, that block group’s own residual is expected to increase by about .73. Simply put, block groups whose neighbors were under or over predicted, tend to be under or over predicted in the same direction. The first step in calculating the slope is finding the average of the OLS residuals of neighboring block groups. Then the OLS residuals are regressed on the average of the neighbor’s OLS residuals. The slope measures the extent to which the two variables move together, divided by the variance of the neighbors’ average residuals. Plainly, it is the expected change of the block group’s residuals for each one-unit increase in the average residual of its neighbor.
 
-R, the tool we used to run the regression, can also test other
-regression assumptions, such as homoscedasticity, which is also related
-to the assumption of independence of errors. R has specific packages
-designed to run the Breusch-Pagan, Koenker-Bassett, and White test,
-which determine whether the variance of the residuals changes with the
-predictors. In these tests, the null hypothesis is that the errors are
-homoscedastic and the alternative hypothesis is that the errors are
-heteroscedastic. A p-value < .05 means we reject the null hypothesis,
-while a p-value > .05 means we fail to reject the null hypothesis,
-indicating there is no significant evidence of heteroscedasticity.
+R, the tool we used to run the regression, can also test other regression assumptions, such as homoscedasticity, which is also related to the assumption of independence of errors. R has specific packages designed to run the Breusch-Pagan, Koenker-Bassett, and White test, which determine whether the variance of the residuals changes with the predictors. In these tests, the null hypothesis is that the errors are homoscedastic and the alternative hypothesis is that the errors are heteroscedastic. A p-value \< .05 means we reject the null hypothesis, while a p-value \> .05 means we fail to reject the null hypothesis, indicating there is no significant evidence of heteroscedasticity.
 
-R can also test the assumption of normality of errors with a package
-that runs the Jarque-Bera test. The null hypothesis is that the errors
-are normally distributed and the alternative hypothesis is that the
-errors are not normally distributed. A p-value < .05 means we reject
-the null hypothesis and conclude that the residuals are not normal,
-while a p-value > .05 means we fail to reject the null hypothesis and
-conclude that the residuals are normal.
+R can also test the assumption of normality of errors with a package that runs the Jarque-Bera test. The null hypothesis is that the errors are normally distributed and the alternative hypothesis is that the errors are not normally distributed. A p-value \< .05 means we reject the null hypothesis and conclude that the residuals are not normal, while a p-value \> .05 means we fail to reject the null hypothesis and conclude that the residuals are normal.
 
-We used R to run spatial lag and spatial error regressions. Unlike OLS,
-the spatial lag model assumes spatial dependence. The model accounts for
-this dependence by adding an extra predictor to the OLS model: the
-average dependent variable of each neighbor, or in our case, the average
-house value of each block group’s neighbors (W * LNMEDHVAL).
+## Spatial Lag and Spatial Error Models
+
+We used R to run spatial lag and spatial error regressions. Unlike OLS, the spatial lag model assumes spatial dependence. The model accounts for this dependence by adding an extra predictor to the OLS model: the average dependent variable of each neighbor, or in our case, the average house value of each block group’s neighbors (W \* LNMEDHVAL).
 
 $$\begin{aligned}
 \text{LNMEDHVAL} = \; & \rho W \cdot \text{LNMEDHVAL} + \beta_0 + \beta_1 \text{PCTBACHMOR} + \beta_2 \text{PCTVACANT} \\
 & + \beta_3 \text{PCTSINGLES} + \beta_4 \text{LNNBELPOV} + \beta_5 \text{MEDHHINC} + \varepsilon
 \end{aligned}$$
 
-**W** is our queen weights and **LNMEDHVAL** is our dependent
-variable, log median house values for all block groups 
+**W** is our queen weights and **LNMEDHVAL** is our dependent variable, log median house values for all block groups
 
 Which means,
 
-$W * LNMEDHVAL$ is the spatially lagged dependent variable: the average log
-median house value of each block group’s neighbors. 
+$W * LNMEDHVAL$ is the spatially lagged dependent variable: the average log median house value of each block group’s neighbors.
 
-$\rho$ measures the strength of spatial dependence: how much a block group’s house value
-depends on its neighbors’ house values.
+$\rho$ measures the strength of spatial dependence: how much a block group’s house value depends on its neighbors’ house values.
 
-$\beta_0$ is the intercept, $\beta_1$ through $\beta_5$ are the coefficients for each predictor
-in the error term
+$\beta_0$ is the intercept, $\beta_1$ through $\beta_5$ are the coefficients for each predictor in the error term
 
-We also used a spatial error model in our analysis, which accounts for
-spatial dependencies in the unobserved factors that could impact our
-dependent variable. In contrast to the spatial lag model that says house
-value is influenced directly by surrounding house values, the spatial
-error model says that house values in a similar region are subject to
-the same unobserved conditions.
+We also used a spatial error model in our analysis, which accounts for spatial dependencies in the unobserved factors that could impact our dependent variable. In contrast to the spatial lag model that says house value is influenced directly by surrounding house values, the spatial error model says that house values in a similar region are subject to the same unobserved conditions.
 
 $$ \begin{aligned} \text{LNMEDHVAL} = \; & \beta_0 + \beta_1 \text{PCTBACHMOR} + \beta_2 \text{PCTVACANT} \\& + \beta_3 \text{PCTSINGLES} + \beta_4 \text{LNNBELPOV} + \beta_5 \text{MEDHHINC} + \varepsilon \end{aligned} $$
 
 $$ \varepsilon = \lambda W \varepsilon + u $$
 
-* $\beta_0$ is the intercept, and $\beta_1$ through $\beta_5$ are the coefficients for each
-  predictor.
-* $\varepsilon$ is the error term from the main regression, the part of house values
-  the predictors don’t explain.
-* $W$ is the spatially lagged error: the average error of each block
-  group’s neighbors, as defined by the Queen matrix.
-* $\lambda$ measures how strongly a block group’s error is related to its
-  neighbors’ errors.
-* $u$ is the remaining random error, which should be independent and free
-  of spatial autocorrelation. 
-  
-The other OLS assumptions also pertain to Spatial Lag and Spatial Error models, 
-with the exception of spatial independence of observations. The goal of these 
-models is to account for spatial dependence, resulting in a better fitting 
-model withhigher rates of reliability. We are able to measure the accuracy of 
-our model with various metrics. First, we can look at the Moran’s I of 
-residuals. The value should be closer to 0 than the OLS Moran’s I of residuals 
-and ideally not statistically significant. If the spatial models work, the 
-spatial lag term (ρ) or spatial error term (λ) will capture the spatial 
-patterns, instead of leaving them in the residuals. We also compare each model 
-by using the Akaike Information Criterion/Schwarz Criterion, Log Likelihood, 
-and the Likelihood Ratio Test. These criteria are only valid when the models 
-being compared share the same dependent variable and are fit to the same set of
-observations, which is the case for all three models in this analysis.Each 
-criterion also has its own characteristics and requirements, which are 
-discussed below. The Akaike Information Criterion/Schwarz Criterion are measures 
-of goodness of fit. We use them when we want to compare models while accounting 
-for complexity because it penalizes each additional parameter. When comparing 
-AIC across models, we opt for a lower value because it indicates the model fits 
-well without unnecessary parameters. AIC is only useful for comparing models. We
-can use the AIC to compare nested and non-nested models.
+- $\beta_0$ is the intercept, and $\beta_1$ through $\beta_5$ are the coefficients for each predictor.
+- $\varepsilon$ is the error term from the main regression, the part of house values the predictors don’t explain.
+- $W$ is the spatially lagged error: the average error of each block group’s neighbors, as defined by the Queen matrix.
+- $\lambda$ measures how strongly a block group’s error is related to its neighbors’ errors.
+- $u$ is the remaining random error, which should be independent and free of spatial autocorrelation.
 
-We use Log Likelihood as a measure of fit, by scoring how well the model matches 
-the observed data. A higher score indicates that the observed data is more 
-probably under the model, meaning a better fit. We get the score by multiplying 
-the likelihood value of each block group In our data, this would require 
-multiplying 1,720 block group values, resulting in a number so extreme, it 
-could easily become unmanageable. Instead, the Log Likelihood, takes the log of 
-each value, which by the rules of logarithms, turns the multiplication into
-addition. Because Log Likelihood doesn’t penalize additional parameters, it is 
-important to use it alongside AIC. 
+The other OLS assumptions also pertain to Spatial Lag and Spatial Error models, with the exception of spatial independence of observations. The goal of these models is to account for spatial dependence, resulting in a better fitting model withhigher rates of reliability. We are able to measure the accuracy of our model with various metrics. First, we can look at the Moran’s I of residuals. The value should be closer to 0 than the OLS Moran’s I of residuals and ideally not statistically significant. If the spatial models work, the spatial lag term (ρ) or spatial error term (λ) will capture the spatial patterns, instead of leaving them in the residuals. We also compare each model by using the Akaike Information Criterion/Schwarz Criterion, Log Likelihood, and the Likelihood Ratio Test. These criteria are only valid when the models being compared share the same dependent variable and are fit to the same set of observations, which is the case for all three models in this analysis.Each criterion also has its own characteristics and requirements, which are discussed below. The Akaike Information Criterion/Schwarz Criterion are measures of goodness of fit. We use them when we want to compare models while accounting for complexity because it penalizes each additional parameter. When comparing AIC across models, we opt for a lower value because it indicates the model fits well without unnecessary parameters. AIC is only useful for comparing models. We can use the AIC to compare nested and non-nested models.
 
-Log Likelihood can be used when comparing nested and non-nested models. The 
-Likelihood Ratio Test measures if a more complex model fits the data 
-significantly better than a simpler one. It uses log likelihood to measure the 
-fit of two models, one more complex than the other, for example a model that 
-accounts for spatial dependency and an OLS model. It then compares the two log 
-likelihood scores and runs a test to check whether the difference is big enough 
-to reliably not be attributable to random chance. The Likelihood Ratio statistic 
-follows a chi-squared distribution where the degrees of freedom are equal to
-the difference in the number of parameters between the two models. For our 
-model, the df = 1 because each spatial model adds one parameter. The Likelihood 
-Ratio Test can only be used on nested models. Because of this, we cannot compare 
-spatial lag and spatial error models. In this case, they can only be compared to 
-OLS. The null hypothesis in the Likelihood Ratio Test is always that the complex 
-model is not a better fit than the simpler model. Using the spatial lag and 
-spatial error models as examples, the null and alternative hypotheses are as
-follows: 
+We use Log Likelihood as a measure of fit, by scoring how well the model matches the observed data. A higher score indicates that the observed data is more probably under the model, meaning a better fit. We get the score by multiplying the likelihood value of each block group In our data, this would require multiplying 1,720 block group values, resulting in a number so extreme, it could easily become unmanageable. Instead, the Log Likelihood, takes the log of each value, which by the rules of logarithms, turns the multiplication into addition. Because Log Likelihood doesn’t penalize additional parameters, it is important to use it alongside AIC.
+
+Log Likelihood can be used when comparing nested and non-nested models. The Likelihood Ratio Test measures if a more complex model fits the data significantly better than a simpler one. It uses log likelihood to measure the fit of two models, one more complex than the other, for example a model that accounts for spatial dependency and an OLS model. It then compares the two log likelihood scores and runs a test to check whether the difference is big enough to reliably not be attributable to random chance. The Likelihood Ratio statistic follows a chi-squared distribution where the degrees of freedom are equal to the difference in the number of parameters between the two models. For our model, the df = 1 because each spatial model adds one parameter. The Likelihood Ratio Test can only be used on nested models. Because of this, we cannot compare spatial lag and spatial error models. In this case, they can only be compared to OLS. The null hypothesis in the Likelihood Ratio Test is always that the complex model is not a better fit than the simpler model. Using the spatial lag and spatial error models as examples, the null and alternative hypotheses are as follows:
 
 For the spatial lag model:
-  
-* $H₀: ρ = 0$ The spatial lag model is not a better fit than OLS.
-* $H₁: ρ ≠ 0$ The spatial lag model is a better fit than OLS. 
+
+- $H₀: ρ = 0$ The spatial lag model is not a better fit than OLS.
+- $H₁: ρ ≠ 0$ The spatial lag model is a better fit than OLS.
 
 For the spatial error model:
 
-* $H₀: λ = 0$ The spatial error model is not a better fit than OLS.
-* $H₁: λ ≠ 0$ The spatial error model is a better fit than OLS. If the
-  p-value is less than 0.05, we reject the null hypothesis and conclude
-  that the spatial model fits significantly better than OLS.
+- $H₀: λ = 0$ The spatial error model is not a better fit than OLS.
+- $H₁: λ ≠ 0$ The spatial error model is a better fit than OLS. If the p-value is less than 0.05, we reject the null hypothesis and conclude that the spatial model fits significantly better than OLS.
 
-We ran our Geographically Weighted Regression (GWR) analyses in R. GWR
-runs a separate local regression for each block group, using a
-proximity-based weighting scheme that gives closer neighbors more
-influence on the local regression coefficient than farther neighbors.
-Simpson’s paradox describes the seemingly enigmatic condition in which a
-global pattern in the dataset disappears or reverses when the data is
-divided into subgroups. A single global regression may misrepresent
-local relationships that cannot be captured with a single statistic.
-This paradox is common in spatial data because relationships between the
-dependent variable and predictors vary across space, a state called
-spatial non-stationarity. GWR uniquely addresses this. In the case of
-our model, the relationship between vacancy and house values may differ
-substantially between neighborhoods in Philadelphia, but we wouldn’t be
-able to tell based on a single global statistic. 
+## Geographically Weighted Regression
 
-GWR uses what is called a bandwidth to determine which neighboring observations 
-are included in the local analysis. There are two types of bandwidths: fixed and
-adaptive. Fixed bandwidth uses a fixed distance from the regression
-point outward in all directions, this means the area also remains
-constant for each local regression. In other words, a fixed bandwidth
-uses the same sized net to capture its neighboring observations and it
-is most effective when observations are relatively uniformly distributed
-across space. Conversely, adaptive bandwidth is best used when
-observations vary widely across space, when events are concentrated in
-one area and sparse in others. Unlike the fixed bandwidth’s same sized
-net analogy, adaptive bandwidth’s range is dictated by the number of
-neighboring observations it captures. The net’s size may change, but the
-number of neighboring observations remains the same. We use adaptive
-bandwidth in our model because the observations in our data are not
-uniformly distributed across space, they vary quite a bit given where in
-the city the block group is. Block groups are small and dense in Center
-City and larger in the Northeast and Northwest areas of Philadelphia. If
-we were to use fixed bandwidth for this data, we would capture many
-block groups downtown and very few at the edges of th city. 
+We ran our Geographically Weighted Regression (GWR) analyses in R. GWR runs a separate local regression for each block group, using a proximity-based weighting scheme that gives closer neighbors more influence on the local regression coefficient than farther neighbors. Simpson’s paradox describes the seemingly enigmatic condition in which a global pattern in the dataset disappears or reverses when the data is divided into subgroups. A single global regression may misrepresent local relationships that cannot be captured with a single statistic. This paradox is common in spatial data because relationships between the dependent variable and predictors vary across space, a state called spatial non-stationarity. GWR uniquely addresses this. In the case of our model, the relationship between vacancy and house values may differ substantially between neighborhoods in Philadelphia, but we wouldn’t be able to tell based on a single global statistic.
 
-GWR runs by attributing a value to each coefficient at each location. This means
-that our model ran a weighted regression for every 1,720 block groups.
-It does this by selecting a block group, assigning weights to nearby
-block groups based on the bandwidth, running a weighted regression using
-those weights, saving those coefficients as those block groups local
-coefficients, and then repeating that process for each block group. The
-GWR equation for our model is as follows:
+GWR uses what is called a bandwidth to determine which neighboring observations are included in the local analysis. There are two types of bandwidths: fixed and adaptive. Fixed bandwidth uses a fixed distance from the regression point outward in all directions, this means the area also remains constant for each local regression. In other words, a fixed bandwidth uses the same sized net to capture its neighboring observations and it is most effective when observations are relatively uniformly distributed across space. Conversely, adaptive bandwidth is best used when observations vary widely across space, when events are concentrated in one area and sparse in others. Unlike the fixed bandwidth’s same sized net analogy, adaptive bandwidth’s range is dictated by the number of neighboring observations it captures. The net’s size may change, but the number of neighboring observations remains the same. We use adaptive bandwidth in our model because the observations in our data are not uniformly distributed across space, they vary quite a bit given where in the city the block group is. Block groups are small and dense in Center City and larger in the Northeast and Northwest areas of Philadelphia. If we were to use fixed bandwidth for this data, we would capture many block groups downtown and very few at the edges of th city.
+
+GWR runs by attributing a value to each coefficient at each location. This means that our model ran a weighted regression for every 1,720 block groups. It does this by selecting a block group, assigning weights to nearby block groups based on the bandwidth, running a weighted regression using those weights, saving those coefficients as those block groups local coefficients, and then repeating that process for each block group. The GWR equation for our model is as follows:
 
 $$\begin{aligned}
 \text{LNMEDHVAL}_i = \; & \beta_0(u_i, v_i) + \beta_1(u_i, v_i)\,\text{PCTBACHMOR}_i + \beta_2(u_i, v_i)\,\text{PCTVACANT}_i \\
 & + \beta_3(u_i, v_i)\,\text{PCTSINGLES}_i + \beta_4(u_i, v_i)\,\text{LNNBELPOV}_i + \beta_5(u_i, v_i)\,\text{MEDHHINC}_i + \varepsilon_i
 \end{aligned}$$
 
-* $i$ refers to an individual block group
-* $(ui,vi)$ are the coordinates of block group i
-* $\beta_0(ui,vi)$ is the local intercept at block group i
-- $\beta_1(ui,vi)$ through $\beta_5(ui,vi)$ are the local coefficients for each
-  predictor at block group i, which can vary across space
+- $i$ refers to an individual block group
+- $(ui,vi)$ are the coordinates of block group i
+- $\beta_0(ui,vi)$ is the local intercept at block group i
+- $\beta_1(ui,vi)$ through $\beta_5(ui,vi)$ are the local coefficients for each predictor at block group i, which can vary across space
 - $\varepsilon_i$ is the error term for block group i.
 
-The local coefficients are estimated using weighted least squares:
-$$ \hat{\beta}(u_i, v_i) = (X^T W_i X)^{-1} X^T W_i y $$ 
+The local coefficients are estimated using weighted least squares: $$ \hat{\beta}(u_i, v_i) = (X^T W_i X)^{-1} X^T W_i y $$
 
+The OLS assumptions are the same for GWR. One assumption even becomes more stringent: no severe multicollinearity. This is because GWR makes multicollinearity more likely and potentially more potent. Each local regression relies primarily on neighboring observations, which means limited variation and less total amount of data per regression point. Also, because nearby block groups tend to have similar characteristics, predictors that are only moderately correlated across the city can be highly correlated within a local neighborhood. When predictors are highly correlated, the regression cannot identify which variable produces which outcome, resulting in unstable coefficients and potentially creating spatial patterns that may look deceptively meaningful. We can check for multicollinearity using the condition number. The condition number measures the degree of multicollinearity in a set of predictors. It is calculated for each local regression and if it reads greater than 30, we generally cannot trust its results. While stationarity isn’t named as a formal assumption of OLS, it is implicit in the mechanics of the equation. GWR, also implies stationarity, although it takes on a different meaning. OLS assumes global stationarity; GWR assumes local stationarity.
 
-The OLS assumptions are the same for GWR. One assumption even becomes
-more stringent: no severe multicollinearity. This is because GWR makes
-multicollinearity more likely and potentially more potent. Each local
-regression relies primarily on neighboring observations, which means
-limited variation and less total amount of data per regression point.
-Also, because nearby block groups tend to have similar characteristics,
-predictors that are only moderately correlated across the city can be
-highly correlated within a local neighborhood. When predictors are
-highly correlated, the regression cannot identify which variable
-produces which outcome, resulting in unstable coefficients and
-potentially creating spatial patterns that may look deceptively
-meaningful. We can check for multicollinearity using the condition
-number. The condition number measures the degree of multicollinearity in
-a set of predictors. It is calculated for each local regression and if
-it reads greater than 30, we generally cannot trust its results. While
-stationarity isn’t named as a formal assumption of OLS, it is implicit
-in the mechanics of the equation. GWR, also implies stationarity,
-although it takes on a different meaning. OLS assumes global
-stationarity; GWR assumes local stationarity.
+# Results
 
-# Results 
+##Spatial Autocorrelation
 
-##Spatial Autocorrelation 
-
-**Global Moran's I**
-The global Moran’s I for LNMEDHVAL, calculated with the Queen contiguity weight matrix, is 0.794. If house values were randomly spread across the city with no spatial pattern, Moran’s I would be slightly less than zero. Our value is much higher than that, which means there is strong positive spatial autocorrelation. In other words, block groups with high house values tend to be next to other high-value block groups, and block groups with low house values tend to be next to other low-value block groups.
+**Global Moran's I** The global Moran’s I for LNMEDHVAL, calculated with the Queen contiguity weight matrix, is 0.794. If house values were randomly spread across the city with no spatial pattern, Moran’s I would be slightly less than zero. Our value is much higher than that, which means there is strong positive spatial autocorrelation. In other words, block groups with high house values tend to be next to other high-value block groups, and block groups with low house values tend to be next to other low-value block groups.
 
 ```{r queens-weight-matrix}
 knitr::kable(queen_nb, digits = 2, booktabs = TRUE,
@@ -1247,9 +998,9 @@ plot(global_moran_res_hist)
 
 **Local Moran's I**
 
-The global Moran’s I gives us one number for the whole city, but it doesn’t tell us where the clustering is happening. To find that out, we used the Local Moran’s I (LISA). LISA looks at each block group one at a time and compares its median house value to the values of its Queen neighbors. A block group counts as “high” if its value is above the 1761 block groun average and “low” if it is below.   
+The global Moran’s I gives us one number for the whole city, but it doesn’t tell us where the clustering is happening. To find that out, we used the Local Moran’s I (LISA). LISA looks at each block group one at a time and compares its median house value to the values of its Queen neighbors. A block group counts as “high” if its value is above the 1761 block groun average and “low” if it is below.
 
-The significance map shows which block groups have a local Moran’s I that is statistically significant (p < 0.05) and which do not. The significant block groups line up closely with the clusters on the cluster map, and the block groups that are not significant fill most of the space between them. 
+The significance map shows which block groups have a local Moran’s I that is statistically significant (p \< 0.05) and which do not. The significant block groups line up closely with the clusters on the cluster map, and the block groups that are not significant fill most of the space between them.
 
 ```{r map-dv, fig.width=6.5, fig.height=5.5, out.width="100%", fig.cap="LISA: Statistically Significant Block Groups"}
 map1
@@ -1261,7 +1012,7 @@ The cluster map sorts the significant block groups into four categories. High-Hi
 map2
 ```
 
-High-Low and Low-High block groups are the odd ones out, where a block group’s value is very different from its neighbors. 
+High-Low and Low-High block groups are the odd ones out, where a block group’s value is very different from its neighbors.
 
 High-Low means the block group has a high value but its neighbors are low, and Low-High means the block group has a low value but its neighbors are high. There are very few of these on the map. The Low-High block groups mostly sit at the edges of the High-High clusters, and the few High-Low block groups appear near the Low-Low clusters. This makes sense given our high global Moran’s I: in most of Philadelphia, block groups look like their neighbors rather than different from them.
 
@@ -1269,7 +1020,7 @@ The rest of the city is not significant. This does not mean those block groups h
 
 ## A review of OLS Regression and Assumptions
 
-The OLS regression of LNMEDHVAL on PCTBACHMOR, PCTVACANT, PCTSINGLES, LNNBELPOV, and MEDHHINC shows that four of the five predictors are statistically significant (p < 0.001): PCTBACHMOR and MEDHHINC are positively related to median house value, while PCTVACANT and LNNBELPOV are negatively related. PCTSINGLES is not significant (p = 0.445), and together the predictors explain about 69% of the variance in LNMEDHVAL (R² = 0.6886, adjusted R² = 0.6877).
+The OLS regression of LNMEDHVAL on PCTBACHMOR, PCTVACANT, PCTSINGLES, LNNBELPOV, and MEDHHINC shows that four of the five predictors are statistically significant (p \< 0.001): PCTBACHMOR and MEDHHINC are positively related to median house value, while PCTVACANT and LNNBELPOV are negatively related. PCTSINGLES is not significant (p = 0.445), and together the predictors explain about 69% of the variance in LNMEDHVAL (R² = 0.6886, adjusted R² = 0.6877).
 
 ```{r ols-table}
 ols_table <- broom::tidy(ols_model)
@@ -1286,19 +1037,17 @@ knitr::kable(
 
 **Tests on heteroscedasticity results**
 
-To check whether the variance of the OLS residuals is constant, we ran three tests: the Breusch-Pagan test, the Koenker-Bassett test, and the White test. For all three, the null hypothesis is that the residuals are homoscedastic and the alternative is that they are heteroscedastic. The Breusch-Pagan statistic is 196.52 (df = 5, p < 0.001), the Koenker-Bassett statistic is 74.67 (df = 5, p < 0.001), and the White statistic is 189.90 (df = 20, p < 0.001).
+To check whether the variance of the OLS residuals is constant, we ran three tests: the Breusch-Pagan test, the Koenker-Bassett test, and the White test. For all three, the null hypothesis is that the residuals are homoscedastic and the alternative is that they are heteroscedastic. The Breusch-Pagan statistic is 196.52 (df = 5, p \< 0.001), the Koenker-Bassett statistic is 74.67 (df = 5, p \< 0.001), and the White statistic is 189.90 (df = 20, p \< 0.001).
 
 The three tests are consistent with each other. All of them have p-values well below 0.05, so we reject the null hypothesis in every case and conclude that the residuals are heteroscedastic. The Koenker-Bassett test is especially useful here because it still works when the residuals are not normally distributed, which is the case for our model, as shown in the next section.
 
 This is not fully consistent with our conclusion in Homework 1. There, we looked at the plot of standardized residuals against predicted values, described it as a random cloud, and concluded the residuals were homoscedastic. Looking at the plot again for the current model, most points do form a cloud around zero, but the spread is wider at lower predicted values and narrower at higher ones. This pattern is easy to miss by eye, and with 1,720 block groups the formal tests can pick up even small differences in variance. The tests therefore give us a more reliable answer than the plot alone.
 
-**Tests on normality of errors (Jarque-Bera test)**
-The Jarque-Bera test checks whether the OLS residuals are normally distributed. The null hypothesis is that the residuals are normal, and the alternative is that they are not. The Jarque-Bera statistic is 763.34 (df = 2, p < 0.001), so we reject the null hypothesis and conclude that the residuals are not normally distributed.
+**Tests on normality of errors (Jarque-Bera test)** The Jarque-Bera test checks whether the OLS residuals are normally distributed. The null hypothesis is that the residuals are normal, and the alternative is that they are not. The Jarque-Bera statistic is 763.34 (df = 2, p \< 0.001), so we reject the null hypothesis and conclude that the residuals are not normally distributed.
 
 This is different from our conclusion in Homework 1, where we said the histogram of standardized residuals looked normal. At first glance the histogram is bell-shaped and centered at zero. Looking more closely, it is taller and narrower in the middle than a normal curve and has long tails, with a few residuals reaching about −4 and +6. The Jarque-Bera test looks specifically at the shape of the distribution, meaning skewness and how heavy the tails are. With 1,720 observations, it can detect these departures from normality even when the histogram looks close to normal by eye.
 
-**Scatter-plot of OLS Residuals with weighted residuals**
-This scatterplot shows each block group’s OLS residual plotted against the weighted residual, which is the average residual of its Queen neighbors. If the OLS assumption of independent errors held, there would be no pattern and the line would be flat. Instead, the points and the fitted line slope upward. This means block groups tend to have errors in the same direction as their neighbors. When the model overpredicts house values in one block group, it usually overpredicts in the block groups around it too, and the same is true for underprediction.
+**Scatter-plot of OLS Residuals with weighted residuals** This scatterplot shows each block group’s OLS residual plotted against the weighted residual, which is the average residual of its Queen neighbors. If the OLS assumption of independent errors held, there would be no pattern and the line would be flat. Instead, the points and the fitted line slope upward. This means block groups tend to have errors in the same direction as their neighbors. When the model overpredicts house values in one block group, it usually overpredicts in the block groups around it too, and the same is true for underprediction.
 
 ```{r map-dv, fig.width=6.5, fig.height=5.5, out.width="100%", fig.cap="Scatter-plot of OLS Residuals with weighted residuals"}
 map3
@@ -1355,15 +1104,14 @@ knitr::kable(
   table.attr = 'class="table table-striped"'
 )
 ```
-The slope b is 0.731, so for every one unit increase in the neighbors’ average residual, a block group’s own residual goes up by about 0.73. The slope is statistically significant (t = 22.00, p < 0.001), which means there is significant spatial autocorrelation in the OLS residuals. The neighbors’ residuals alone explain about 22% of the variation in a block group’s own residual (R² = 0.22), which is a lot for something OLS assumes should be zero.
 
-**Scatter-plot of Moran'I**
-The Moran’s I scatterplot plots each block group’s OLS residual on the x-axis against the average residual of its Queen neighbors on the y-axis. The line through the points slopes upward, and its slope equals the Moran’s I value of 0.301. Most of the points fall in the bottom-left and top-right parts of the plot. This means block groups where the model overpredicts tend to be next to other block groups where it also overpredicts, and block groups where it underpredicts tend to be next to others where it underpredicts. A few block groups are labelled with numbers on the plot because R flags them as influential points, meaning their residuals are especially different from their neighbors’.
+The slope b is 0.731, so for every one unit increase in the neighbors’ average residual, a block group’s own residual goes up by about 0.73. The slope is statistically significant (t = 22.00, p \< 0.001), which means there is significant spatial autocorrelation in the OLS residuals. The neighbors’ residuals alone explain about 22% of the variation in a block group’s own residual (R² = 0.22), which is a lot for something OLS assumes should be zero.
 
-The Moran’s I of 0.301 is far above the value we would expect if the residuals had no spatial pattern, which is slightly less than zero. The analytical test confirms that this is significant (z = 21.38, p < 0.001). The OLS residuals are positively spatially autocorrelated, even though the OLS model assumes they are independent.
+**Scatter-plot of Moran'I** The Moran’s I scatterplot plots each block group’s OLS residual on the x-axis against the average residual of its Queen neighbors on the y-axis. The line through the points slopes upward, and its slope equals the Moran’s I value of 0.301. Most of the points fall in the bottom-left and top-right parts of the plot. This means block groups where the model overpredicts tend to be next to other block groups where it also overpredicts, and block groups where it underpredicts tend to be next to others where it underpredicts. A few block groups are labelled with numbers on the plot because R flags them as influential points, meaning their residuals are especially different from their neighbors’.
 
-**Results of 999 permutations for OLS regression residuals**
-To check whether the spatial autocorrelation in the OLS residuals could be due to chance, we compared the observed Moran’s I to 999 random permutations of the residuals. Our observed Moran’s I of 0.301 ranked 1,000 out of 1,000, meaning none of the 999 permuted values was as large as ours. This gives a pseudo p-value of 0.001, so we reject the null hypothesis and conclude that there is significant positive spatial autocorrelation in the OLS residuals.
+The Moran’s I of 0.301 is far above the value we would expect if the residuals had no spatial pattern, which is slightly less than zero. The analytical test confirms that this is significant (z = 21.38, p \< 0.001). The OLS residuals are positively spatially autocorrelated, even though the OLS model assumes they are independent.
+
+**Results of 999 permutations for OLS regression residuals** To check whether the spatial autocorrelation in the OLS residuals could be due to chance, we compared the observed Moran’s I to 999 random permutations of the residuals. Our observed Moran’s I of 0.301 ranked 1,000 out of 1,000, meaning none of the 999 permuted values was as large as ours. This gives a pseudo p-value of 0.001, so we reject the null hypothesis and conclude that there is significant positive spatial autocorrelation in the OLS residuals.
 
 This is a problem because OLS assumes the errors are independent of each other. When they are not, the model is missing something about location, and its standard errors and p-values may not be reliable. This is why we go on to test the spatial lag and spatial error models.
 
@@ -1373,41 +1121,37 @@ Moran’s I and the slope b of the weighted residuals tell the same story. Both 
 
 ### Spatial Lag Regression Results
 
-**Coefficients**
-The spatial lag model adds one new term to the OLS model, W_LNMEDHVAL, which is the average log median house value of each block group’s Queen neighbors. Its coefficient, rho (ρ), is 0.624 and is highly significant (z = 34.26, p < 0.001). This means a block group’s house value is strongly tied to the house values around it, even after accounting for the five predictors. Because both the block group’s value and its neighbors’ average are logged, we can read this roughly as: a 1% increase in the neighbors’ average median house value is associated with about a 0.62% increase in the block group’s own median house value, holding the other predictors constant.
+**Coefficients** The spatial lag model adds one new term to the OLS model, W_LNMEDHVAL, which is the average log median house value of each block group’s Queen neighbors. Its coefficient, rho (ρ), is 0.624 and is highly significant (z = 34.26, p \< 0.001). This means a block group’s house value is strongly tied to the house values around it, even after accounting for the five predictors. Because both the block group’s value and its neighbors’ average are logged, we can read this roughly as: a 1% increase in the neighbors’ average median house value is associated with about a 0.62% increase in the block group’s own median house value, holding the other predictors constant.
 
-PCTBACHMOR, PCTVACANT and MEDHHINC are still significant (p < 0.001) and have the same signs as in OLS, while PCTSINGLES is still not significant (p = 0.124). The main change is LNNBELPOV, which was significant in OLS (p < 0.001) but is no longer significant in the spatial lag model (p = 0.096). All of the coefficients also get smaller. For example, the coefficient for PCTBACHMOR drops from 0.0180 in OLS to 0.0075, and PCTVACANT drops from −0.0159 to −0.0073. This happens because some of the effect that OLS gave to the predictors is now explained by the neighbors’ house values. In other words, OLS was partly giving the predictors credit for the influence of location.
+PCTBACHMOR, PCTVACANT and MEDHHINC are still significant (p \< 0.001) and have the same signs as in OLS, while PCTSINGLES is still not significant (p = 0.124). The main change is LNNBELPOV, which was significant in OLS (p \< 0.001) but is no longer significant in the spatial lag model (p = 0.096). All of the coefficients also get smaller. For example, the coefficient for PCTBACHMOR drops from 0.0180 in OLS to 0.0075, and PCTVACANT drops from −0.0159 to −0.0073. This happens because some of the effect that OLS gave to the predictors is now explained by the neighbors’ house values. In other words, OLS was partly giving the predictors credit for the influence of location.
 
-**Breusch-Pagan test of spatial lag residuals**
-The Breusch-Pagan test shows that the spatial lag residuals are still heteroscedastic (BP = 325.71, df = 5, p < 0.001). The statistic is even higher than it was for OLS (196.52), so accounting for spatial dependence did not fix the uneven size of the errors.
+**Breusch-Pagan test of spatial lag residuals** The Breusch-Pagan test shows that the spatial lag residuals are still heteroscedastic (BP = 325.71, df = 5, p \< 0.001). The statistic is even higher than it was for OLS (196.52), so accounting for spatial dependence did not fix the uneven size of the errors.
 
 **Comparing Spatial Lag and OLS: AIC, Schwarz Criterion, Log Likelihood and Likelihood Ratio Test**
 
-Compared to OLS, the spatial lag model performs better on every measure of fit. Its AIC (462.83) and Schwarz Criterion (506.43) are much lower than those of OLS (1297.35 and 1335.50), and lower values mean a better fit even after penalizing the extra parameter. Its log likelihood is also much higher (−223.42 compared to −641.68). The Likelihood Ratio Test confirms this. The null hypothesis is that the spatial lag model does not fit better than OLS (ρ = 0), and the LR statistic is 836.52 with 1 degree of freedom (p < 0.001). We reject the null hypothesis and conclude that the spatial lag model fits significantly better than OLS.
-
+Compared to OLS, the spatial lag model performs better on every measure of fit. Its AIC (462.83) and Schwarz Criterion (506.43) are much lower than those of OLS (1297.35 and 1335.50), and lower values mean a better fit even after penalizing the extra parameter. Its log likelihood is also much higher (−223.42 compared to −641.68). The Likelihood Ratio Test confirms this. The null hypothesis is that the spatial lag model does not fit better than OLS (ρ = 0), and the LR statistic is 836.52 with 1 degree of freedom (p \< 0.001). We reject the null hypothesis and conclude that the spatial lag model fits significantly better than OLS.
 
 **Moran's I scatterplot of spatial lag residuals**
 
-The Moran’s I of the spatial lag residuals is −0.072, compared to 0.301 for the OLS residuals. In the Moran’s I scatterplot, the line is almost flat and slopes slightly downward, while the OLS line clearly sloped upward. In the 999 permutations, the observed value ranked 1 out of 1,000, giving a pseudo p-value of 0.999, so there is no positive spatial autocorrelation left in the residuals. The value is slightly negative, though, and the analytical test (z = −5.09) suggests this small negative autocorrelation is not just chance. The model’s Lagrange Multiplier test for remaining residual autocorrelation is also significant (49.35, p < 0.001). So the spatial lag model fixes most of the problem but slightly overcorrects.
+The Moran’s I of the spatial lag residuals is −0.072, compared to 0.301 for the OLS residuals. In the Moran’s I scatterplot, the line is almost flat and slopes slightly downward, while the OLS line clearly sloped upward. In the 999 permutations, the observed value ranked 1 out of 1,000, giving a pseudo p-value of 0.999, so there is no positive spatial autocorrelation left in the residuals. The value is slightly negative, though, and the analytical test (z = −5.09) suggests this small negative autocorrelation is not just chance. The model’s Lagrange Multiplier test for remaining residual autocorrelation is also significant (49.35, p \< 0.001). So the spatial lag model fixes most of the problem but slightly overcorrects.
 
-**Which model performs better**
-Overall, the spatial lag model does much better than OLS. It has a lower AIC and Schwarz Criterion, a higher log likelihood and a significant Likelihood Ratio Test, and its residuals show far less spatial autocorrelation. The one problem it does not solve is heteroscedasticity.
+**Which model performs better** Overall, the spatial lag model does much better than OLS. It has a lower AIC and Schwarz Criterion, a higher log likelihood and a significant Likelihood Ratio Test, and its residuals show far less spatial autocorrelation. The one problem it does not solve is heteroscedasticity.
 
 ### Spatial Error Regression Results
 
 **Coefficients**
 
-The spatial error model does not add the neighbors' house values as a predictor. Instead, it lets the errors of neighboring block groups be related to each other through the lambda (λ) term. Lambda is 0.803 and is highly significant (z = 47.17, p < 0.001). This means the part of house value that our predictors cannot explain is strongly shared between neighbors. When the model underpredicts a block group, it tends to underpredict its neighbors too, because they share things the model does not measure, such as housing quality, school quality, parks or transit access. For every one unit increase in the neighbors' average error, a block group's own error goes up by about 0.80.
+The spatial error model does not add the neighbors' house values as a predictor. Instead, it lets the errors of neighboring block groups be related to each other through the lambda (λ) term. Lambda is 0.803 and is highly significant (z = 47.17, p \< 0.001). This means the part of house value that our predictors cannot explain is strongly shared between neighbors. When the model underpredicts a block group, it tends to underpredict its neighbors too, because they share things the model does not measure, such as housing quality, school quality, parks or transit access. For every one unit increase in the neighbors' average error, a block group's own error goes up by about 0.80.
 
-All five predictors are significant in the spatial error model. PCTBACHMOR, PCTVACANT and MEDHHINC are significant (p < 0.001) with the same signs as in OLS. LNNBELPOV is also still significant, though less strongly than in OLS (p = 0.038 compared to p < 0.001). The biggest change is PCTSINGLES, which was not significant in OLS (p = 0.445) but becomes significant in the spatial error model (p = 0.005), and its coefficient triples from 0.0005 to 0.0018. Most of the other coefficients get smaller than in OLS, though not by as much as in the spatial lag model. This suggests that once shared unmeasured neighborhood factors are accounted for, the share of single-family homes does matter for house values.
+All five predictors are significant in the spatial error model. PCTBACHMOR, PCTVACANT and MEDHHINC are significant (p \< 0.001) with the same signs as in OLS. LNNBELPOV is also still significant, though less strongly than in OLS (p = 0.038 compared to p \< 0.001). The biggest change is PCTSINGLES, which was not significant in OLS (p = 0.445) but becomes significant in the spatial error model (p = 0.005), and its coefficient triples from 0.0005 to 0.0018. Most of the other coefficients get smaller than in OLS, though not by as much as in the spatial lag model. This suggests that once shared unmeasured neighborhood factors are accounted for, the share of single-family homes does matter for house values.
 
 **Breusch-Pagan test of spatial error residuals**
 
-The Breusch-Pagan test shows that the spatial error residuals are still heteroscedastic (BP = 57.87, df = 5, p < 0.001). The statistic is much lower than for OLS (196.52) and the spatial lag model (325.71), though. So the spatial error model reduces the problem of uneven errors but does not get rid of it.
+The Breusch-Pagan test shows that the spatial error residuals are still heteroscedastic (BP = 57.87, df = 5, p \< 0.001). The statistic is much lower than for OLS (196.52) and the spatial lag model (325.71), though. So the spatial error model reduces the problem of uneven errors but does not get rid of it.
 
 **Comparing Spatial Error and OLS: AIC, Schwarz Criterion, Log Likelihood and Likelihood Ratio Test**
 
-Compared to OLS, the spatial error model also performs better on every measure of fit. Its AIC (702.65) and Schwarz Criterion (746.26) are much lower than those of OLS (1297.35 and 1335.50), and its log likelihood is much higher (−343.33 compared to −641.68). The Likelihood Ratio Test confirms this. The null hypothesis is that the spatial error model does not fit better than OLS (λ = 0), and the LR statistic is 596.70 with 1 degree of freedom (p < 0.001). We reject the null hypothesis and conclude that the spatial error model fits significantly better than OLS.
+Compared to OLS, the spatial error model also performs better on every measure of fit. Its AIC (702.65) and Schwarz Criterion (746.26) are much lower than those of OLS (1297.35 and 1335.50), and its log likelihood is much higher (−343.33 compared to −641.68). The Likelihood Ratio Test confirms this. The null hypothesis is that the spatial error model does not fit better than OLS (λ = 0), and the LR statistic is 596.70 with 1 degree of freedom (p \< 0.001). We reject the null hypothesis and conclude that the spatial error model fits significantly better than OLS.
 
 **Moran's I scatterplot of spatial error residuals**
 
@@ -1462,9 +1206,10 @@ Median household income (MEDHHINC) has a positive relationship with house values
 The local R-squared map shows how well the GWR model explains house values in each part of the city. Values range from about 0.4 to above 0.8. The model performs best (local R-squared above 0.8) in the Northwest, the Far Northeast and the area around West Philadelphia and Center City. It performs worst (local R-squared around 0.4 to 0.6) in North Philadelphia, along the Delaware River and at the southern tip of South Philadelphia. In these areas, house values are likely shaped by factors the model does not include, such as housing condition, redevelopment pressure or industrial land uses. Overall, the map shows that a single citywide model does not fit every part of Philadelphia equally well, which is exactly what GWR is designed to show.
 
 # Discussion
-This report examined spatial variation in median housing values across Philadelphia block groups using three regression methods: Spatial Lag, Spatial Error, and Geographically Weighted Regression (GWR). The results of these regression models were compared with each other and with the Ordinary Least Squares (OLS) model from the previous report. The dependent variable was the log-transformed median housing value, while the independent variables were percentage of residents with a bachelor’s degree or higher, percentage of vacant households, percentage of single-family homes, and percentage of the population under the poverty line. 
 
-The first step in the analysis was creating a Queen weight matrix to determine Moran’s I. The Moran’s I (assumed global) tells us how spatially autocorrelated the entire model is, 1 being positively spatially autocorrelated, -1 being negatively spatially autocorrelated, and 0 being not spatially autocorrelated. We then used a Monte Carlo test to check if the Moran’s I values are accurately representative of the model, and plotted a histogram of all 999 permutations. Following the global Moran’s I calculations, we then calculated the local Moran’s I, also known as LISA. Using LISA, we were able to calculate a Moran’s I for each individual block group, thus allowing us to know how spatially autocorrelated each block group is. We then created a map of these results. Since we decided to complete our analysis in R rather than GeoDa, our OLS regression from the previous report is already calculated and saved into our data frame. 
+This report examined spatial variation in median housing values across Philadelphia block groups using three regression methods: Spatial Lag, Spatial Error, and Geographically Weighted Regression (GWR). The results of these regression models were compared with each other and with the Ordinary Least Squares (OLS) model from the previous report. The dependent variable was the log-transformed median housing value, while the independent variables were percentage of residents with a bachelor’s degree or higher, percentage of vacant households, percentage of single-family homes, and percentage of the population under the poverty line.
+
+The first step in the analysis was creating a Queen weight matrix to determine Moran’s I. The Moran’s I (assumed global) tells us how spatially autocorrelated the entire model is, 1 being positively spatially autocorrelated, -1 being negatively spatially autocorrelated, and 0 being not spatially autocorrelated. We then used a Monte Carlo test to check if the Moran’s I values are accurately representative of the model, and plotted a histogram of all 999 permutations. Following the global Moran’s I calculations, we then calculated the local Moran’s I, also known as LISA. Using LISA, we were able to calculate a Moran’s I for each individual block group, thus allowing us to know how spatially autocorrelated each block group is. We then created a map of these results. Since we decided to complete our analysis in R rather than GeoDa, our OLS regression from the previous report is already calculated and saved into our data frame.
 
 We then calculated the weights (i.e. spatially lagged) residuals from the OLS regression. An important distinction is the difference between spatially lagged residuals and residuals from a Spatial Lag model. A spatially lagged residual is a weighted average of neighboring observations' residuals, calculated by applying a spatial weights matrix to the residual vector. It describes how the errors estimated for nearby areas relate to one another and is often used to investigate residual spatial autocorrelation. By contrast, a Spatial Lag model includes a spatially lagged dependent variable as an explanatory component, representing the relationship between an area's outcome and the outcomes of neighboring areas. Its residuals are the differences between observed and fitted values after accounting for that spatial-lag term. Thus, the spatial lag in the model refers to neighboring outcomes, whereas spatially lagged residuals refer to neighboring model errors. The two concepts are related to spatial dependence but are not interchangeable. Distinguishing them is essential when interpreting model specifications and evaluating whether spatial structure remains unexplained after estimation.
 
@@ -1473,8 +1218,3 @@ We then calculated the Moran’s I for the OLS residuals and mapped the results.
 It is important to note that each model operates within specific limitations and under specific assumptions. OLS provides a baseline estimate of the relationships between the independent variables and housing values, but it assumes that observations are independent and that the model errors are not spatially autocorrelated. These assumptions may be problematic in housing markets, where neighboring areas often share economic conditions, amenities, development patterns, and historical influences. The Spatial Lag model accounts for the influence of neighboring observations through a spatially lagged dependent variable, whereas the Spatial Error model accounts for spatial dependence in the unobserved factors represented by the error term. GWR extends the analysis by allowing relationships between predictors and housing values to vary geographically, revealing the possibility that socioeconomic characteristics have different associations with housing values across Philadelphia. Additionally, Queen-contiguity weights define neighbors according to shared boundaries, which may not fully represent housing-market relationships across physical or socioeconomic boundaries. Finally, the analysis identifies associations rather than causal relationships: omitted characteristics, such as housing quality, accessibility, environmental conditions, and historical patterns of investment, may also influence housing values. The best-performing method should be identified by comparing model fit, information criteria, and residual spatial autocorrelation, rather than assuming that a more complex model is necessarily superior. In particular, lower AIC or AICc values and weaker residual spatial autocorrelation can support a model's selection, although these measures must be interpreted alongside the models' assumptions and comparability. All of this considered, we decided that the best regression model for this scenario is Spatial Lag.
 
 Ultimately, understanding the spatial distribution of housing values requires attention not only to socioeconomic predictors but also to the geographic relationships between neighborhoods. By incorporating spatial dependence and local variation, this analysis provides a more geographically nuanced framework for investigating the factors associated with residential property values in Philadelphia.
-
-
-
-
-
