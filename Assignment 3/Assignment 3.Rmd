@@ -256,7 +256,7 @@ corrplot(cor_mat, method = "color", type = "upper", tl.col = "black",
          tl.cex = 0.8, addCoef.col = "black", number.cex = 0.6)
 ```
 
-**Multicollinearity.** We define severe multicollinearity as pairwise correlations above roughly |0.8|. [State whether any pair exceeds this threshold. Likely note that PCTBACHMOR and MEDHHINC are the most strongly correlated pair, and that Pearson correlations between binary variables (phi coefficients) are limited because they are bounded by the marginal distributions of the variables, especially when one category is rare.] [Comment on which other assumptions are met or violated, such as independence of crashes within the same block group.]
+**Multicollinearity.** We define severe multicollinearity as pairwise correlations above roughly |0.7|. [State whether any pair exceeds this threshold. Likely note that PCTBACHMOR and MEDHHINC are the most strongly correlated pair, and that Pearson correlations between binary variables (phi coefficients) are limited because they are bounded by the marginal distributions of the variables, especially when one category is rare.] [Comment on which other assumptions are met or violated, such as independence of crashes within the same block group.]
 
 ## Logistic regression: full model
 
