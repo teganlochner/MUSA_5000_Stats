@@ -113,114 +113,376 @@ on nine crash-level and neighborhood-level predictors.
 
 ## Why not OLS?
 
-When the dependent variable is binary, OLS regression has several
-problems. Predicted values are not bounded between 0 and 1, so they
-cannot be interpreted as probabilities. The error term cannot be
-normally distributed, since it takes only two values for any given set
-of predictors. The error variance is not constant (heteroskedasticity),
-because the variance of a binary variable depends on its mean. Finally,
-the relationship between the predictors and the probability of the event
-is generally not linear.
+Ordinary least squares (OLS) regression is designed for a continuous
+dependent variable. When the dependent variable is binary (here,
+DRINKING_D, which equals 1 if a crash involved a drunk driver and 0
+otherwise), OLS, which in this setting is called the *linear probability
+model*, runs into several problems:
 
-## Odds and odds ratios
+1. **Predicted values are not valid probabilities.** OLS fits a straight
+   line, which is unbounded. For some combinations of predictor values
+   the fitted value can be less than 0 or greater than 1, which makes no
+   sense for the probability that an event occurs.
+2. **The relationship is not linear.** OLS assumes that a one-unit change
+   in a predictor changes the dependent variable by the same amount
+   everywhere. For a probability, which is bounded between 0 and 1, the
+   effect of a predictor must get smaller as the probability approaches 0
+   or 1, so the true relationship between the predictors and the
+   probability of the event is S-shaped, not a straight line.
+3. **The errors cannot be normally distributed.** For any given set of
+   predictor values the dependent variable takes only two values (0 or
+   1), so the error term can also take only two values. A two-valued
+   variable cannot follow a normal distribution, which undermines the
+   usual t-tests and confidence intervals from OLS.
+4. **The error variance is not constant (heteroskedasticity).** The
+   variance of a binary variable is $p(1-p)$, which depends on its mean,
+   so the variance of the errors changes with the values of the
+   predictors. This violates the OLS assumption of homoscedasticity and
+   makes the OLS standard errors unreliable.
 
-The odds of an event are the probability that it occurs divided by the
-probability that it does not:
+```{r ols-illustration, fig.cap="Illustration with simulated data: an OLS line fitted to a binary outcome (dashed) leaves the 0 to 1 range, while the logistic curve (solid) stays within it.", fig.height=4}
+set.seed(671)
+x_sim <- rnorm(400)
+y_sim <- rbinom(400, 1, plogis(2.2 * x_sim - 1))
+ols_sim <- lm(y_sim ~ x_sim)
+log_sim <- glm(y_sim ~ x_sim, family = binomial)
+grid <- data.frame(x_sim = seq(-3, 3, length.out = 300))
+plot(x_sim, y_sim, pch = 16, col = rgb(0, 0, 0, 0.25),
+     xlab = "Predictor", ylab = "Binary outcome (Y)", ylim = c(-0.4, 1.4))
+abline(h = c(0, 1), col = "grey60", lty = 3)
+lines(grid$x_sim, predict(ols_sim, grid), col = "firebrick", lwd = 2, lty = 2)
+lines(grid$x_sim, predict(log_sim, grid, type = "response"), col = "steelblue", lwd = 2)
+legend("topleft", legend = c("OLS (linear probability model)", "Logistic regression"),
+       col = c("firebrick", "steelblue"), lty = c(2, 1), lwd = 2, bty = "n")
+```
+
+## How logistic regression works around these issues
+
+Logistic regression avoids these problems by modeling the *probability*
+of the event through a transformation that is S-shaped and bounded
+between 0 and 1, rather than modeling the binary outcome directly.
+Because the model is estimated by maximum likelihood using the binomial
+distribution (rather than by least squares), it does not require
+normally distributed, constant-variance errors. To describe the model we
+first need the concept of odds.
+
+### Odds and odds ratios
+
+The **odds** of an event are the probability that it occurs divided by
+the probability that it does not:
 
 $$\text{odds} = \frac{p}{1-p}$$
 
-An odds ratio compares the odds of the event under two conditions. An
-odds ratio of 1 means no association, greater than 1 means higher odds
-of the event, and less than 1 means lower odds. For a predictor in a
-logistic regression, the odds ratio is the multiplicative change in the
-odds of $Y = 1$ for a one-unit increase in that predictor, holding the
-other predictors constant.
+For example, if the probability that a crash involves a drunk driver is
+$p = 0.20$, the odds are $0.20/0.80 = 0.25$, or 1 to 4. Odds equal 1
+when the event is as likely as not ($p = 0.5$), are greater than 1 when
+the event is more likely than not, and are less than 1 when it is less
+likely than not. Unlike probabilities, odds have no upper limit, and
+they can be converted back to probabilities with $p = \text{odds}/(1+\text{odds})$.
 
-## The logistic regression model
+An **odds ratio** (OR) is the ratio of the odds of the event under two
+different conditions, for example the odds of a drunk driver in crashes
+involving speeding divided by the odds in crashes not involving
+speeding. It is interpreted as follows:
 
-Logistic regression models the log of the odds (the logit) as a linear
-function of the predictors. In **logit form**:
+- **OR = 1:** the odds are the same in both conditions, so there is no
+  association.
+- **OR > 1:** the odds of the event are higher under the first condition.
+  The percent increase in the odds is $(OR - 1) \times 100$ (for example,
+  OR = 1.5 means 50% higher odds).
+- **OR < 1:** the odds of the event are lower under the first condition.
+  The percent decrease in the odds is $(1 - OR) \times 100$ (for example,
+  OR = 0.6 means 40% lower odds).
+
+In a logistic regression, the odds ratio for a predictor is the
+multiplicative change in the odds that $Y = 1$ for a one-unit increase
+in that predictor, holding the other predictors constant. Note that an
+odds ratio is a statement about *odds*, not probabilities: an OR of 2
+does not mean the probability doubles (although the two are close when
+the event is rare).
+
+### The logistic regression model
+
+Logistic regression models the natural log of the odds, called the
+**logit**, as a linear function of the predictors. For our model, with
+DRINKING_D as the dependent variable and nine predictors, the equation
+in **logit form** is:
 
 $$\ln\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 FATAL\_OR\_M + \beta_2 OVERTURNED + \beta_3 CELL\_PHONE + \beta_4 SPEEDING + \beta_5 AGGRESSIVE + \beta_6 DRIVER1617 + \beta_7 DRIVER65PLUS + \beta_8 PCTBACHMOR + \beta_9 MEDHHINC$$
 
-In **logistic form**:
+Solving for $p$ gives the equation in **logistic form**:
 
 $$p = P(DRINKING\_D = 1) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 FATAL\_OR\_M + \beta_2 OVERTURNED + \beta_3 CELL\_PHONE + \beta_4 SPEEDING + \beta_5 AGGRESSIVE + \beta_6 DRIVER1617 + \beta_7 DRIVER65PLUS + \beta_8 PCTBACHMOR + \beta_9 MEDHHINC)}}$$
 
-Here $p$ is the probability that a crash involves a drunk driver,
-$\beta_0$ is the intercept, and $\beta_1, \dots, \beta_9$ are the
-coefficients of the predictors. The logistic function is S-shaped,
-bounded between 0 and 1, and monotonic, so it always yields valid
-probabilities, and it is approximately linear in the middle of its range
-and flattens at the extremes. [Optionally include the logit/logistic
-graphs from the slides.]
+The terms in these equations are:
+
+- $p = P(DRINKING\_D = 1)$ is the probability that a crash involved a
+  drunk driver. The quantity $p/(1-p)$ is the odds of that event, and
+  $\ln\left(\frac{p}{1-p}\right)$ is the logit, or log odds.
+- $\beta_0$ is the intercept: the log odds that a crash involved a drunk
+  driver when all of the predictors equal zero.
+- $\beta_1$ through $\beta_7$ are the coefficients of the seven binary
+  predictors (FATAL_OR_M, OVERTURNED, CELL_PHONE, SPEEDING, AGGRESSIVE,
+  DRIVER1617 and DRIVER65PLUS). Each is the change in the log odds of a
+  drunk driver when the crash has that characteristic (coded 1) compared
+  with when it does not (coded 0), holding the other predictors constant.
+- $\beta_8$ and $\beta_9$ are the coefficients of the two continuous
+  predictors: PCTBACHMOR (the percent of residents aged 25 or older with
+  at least a bachelor's degree in the block group) and MEDHHINC (the
+  median household income in the block group). Each is the change in the
+  log odds for a one-unit increase in that predictor (one percentage
+  point or one dollar), holding the others constant.
+- $e$ is the base of the natural logarithm (about 2.718), and the
+  expression in the exponent, $\beta_0 + \beta_1 FATAL\_OR\_M + \dots + \beta_9 MEDHHINC$,
+  is the same linear combination that appears in the logit form.
+
+The two forms are equivalent. The **logit function**,
+$\ln\left(\frac{p}{1-p}\right)$, transforms a probability, which is
+bounded between 0 and 1, into a log odds, which can take any value from
+$-\infty$ to $+\infty$ and can therefore be modeled as a linear function
+of the predictors. The **logistic function**, $p = 1/(1 + e^{-z})$ where
+$z$ is the linear combination of predictors, is the inverse of the logit:
+it transforms any value of $z$ back into a probability.
+
+```{r logistic-curve, fig.cap="The logit function (left) and the logistic function (right).", fig.height=3.6}
+par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1))
+p_seq <- seq(0.001, 0.999, length.out = 500)
+plot(p_seq, log(p_seq / (1 - p_seq)), type = "l", lwd = 2, col = "steelblue",
+     xlab = "p = P(Y = 1)", ylab = "ln(p / (1 - p))", main = "Logit function")
+abline(h = 0, lty = 3, col = "grey50")
+z_seq <- seq(-8, 8, length.out = 500)
+plot(z_seq, 1 / (1 + exp(-z_seq)), type = "l", lwd = 2, col = "steelblue",
+     xlab = "z = linear combination of predictors", ylab = "p = P(Y = 1)",
+     main = "Logistic function", ylim = c(0, 1))
+abline(h = c(0, 1), lty = 3, col = "grey50")
+abline(v = 0, lty = 3, col = "grey50")
+```
+
+The logistic function has several properties that make it well suited to
+a binary dependent variable:
+
+- **It is bounded between 0 and 1.** No matter how large or small the
+  linear combination of predictors becomes, the result is always a valid
+  probability, which fixes the main problem with OLS.
+- **It is S-shaped and monotonic.** The probability always moves in the
+  same direction as the linear combination: a positive coefficient always
+  raises the probability and a negative coefficient always lowers it.
+- **It is approximately linear in the middle and flattens at the
+  extremes.** When the probability is near 0.5, a change in a predictor
+  moves the probability substantially, but when the probability is near 0
+  or 1, the same change moves it very little. This matches how
+  probabilities actually behave, and it means that the effect of a
+  predictor on the *probability* depends on the values of the other
+  predictors, while its effect on the *log odds* is constant.
+- **It yields a quantity with a natural interpretation.** The fitted
+  value is the predicted probability that $Y = 1$, and the exponentiated
+  coefficients are odds ratios.
 
 ## Hypothesis tests for coefficients
 
-For each predictor $k$, we test $H_0: \beta_k = 0$ against
-$H_a: \beta_k \neq 0$. The Wald statistic is
-$z = \hat{\beta}_k / SE(\hat{\beta}_k)$, which follows approximately a
-standard normal distribution under the null (its square follows a
-$\chi^2$ distribution with 1 degree of freedom). Because coefficients
-are on the log-odds scale, we report odds ratios, $e^{\hat{\beta}_k}$,
-with 95% confidence intervals. An odds ratio whose confidence interval
-excludes 1 is statistically significant at the 0.05 level.
+For each predictor $k$ in the model, we test the null hypothesis that the
+predictor is not associated with the odds that a crash involves a drunk
+driver, holding the other predictors constant, against the alternative
+that it is:
+
+$$H_0: \beta_k = 0 \qquad H_a: \beta_k \neq 0$$
+
+The test uses the **Wald statistic**, which divides the estimated
+coefficient by its standard error:
+
+$$z = \frac{\hat{\beta}_k}{SE(\hat{\beta}_k)}$$
+
+In large samples, the Wald statistic follows approximately a standard
+normal distribution under the null hypothesis. Equivalently, its square,
+$z^2$, follows a chi-square distribution with 1 degree of freedom (some
+software reports the Wald statistic in this form). We compare the
+resulting p-value to a significance level of 0.05. If $p < 0.05$ we
+reject the null hypothesis and conclude that the predictor is
+significantly associated with the outcome.
+
+Rather than looking at the estimated $\beta$ coefficients, which are
+changes in the *log* odds and are hard to interpret, most statisticians
+prefer to look at **odds ratios**, which are calculated by exponentiating
+the coefficients:
+
+$$OR_k = e^{\hat{\beta}_k}$$
+
+The 95% confidence interval for the odds ratio is obtained by
+exponentiating the limits of the confidence interval for the coefficient,
+$e^{\hat{\beta}_k \pm 1.96 \times SE(\hat{\beta}_k)}$. If the confidence
+interval for an odds ratio excludes 1, the predictor is significant at
+the 0.05 level, which is equivalent to the Wald test. For a binary
+predictor, the odds ratio compares crashes with the characteristic to
+those without it. For a continuous predictor such as MEDHHINC, it is the
+change in the odds per one-unit increase (here, \$1), so it can help to
+rescale the predictor (for example, to \$1,000 units) to make the odds
+ratio easier to interpret.
 
 ## Assessing model fit
 
-A pseudo R-squared can be calculated for logistic regression, but it
-does not have the OLS interpretation (proportion of variance explained)
-and is not very useful. We instead use the following.
+**R-squared.** A pseudo R-squared can be calculated for logistic
+regression, but it is no longer considered a very useful metric. It does
+not have the same interpretation as the R-squared in OLS (the proportion
+of the variance in the dependent variable explained by the model), and
+different versions of it give different values. We therefore rely on the
+measures below.
 
-**Akaike Information Criterion (AIC).** AIC = $2k - 2\ln(\hat{L})$
-balances goodness of fit against model complexity. Lower values indicate
-a better model.
+**Akaike Information Criterion (AIC).** The AIC is a measure used to
+compare models fit to the same data that balances goodness of fit
+against model complexity, calculated as
+$AIC = 2k - 2\ln(\hat{L})$, where $k$ is the number of estimated
+parameters and $\hat{L}$ is the maximized value of the likelihood
+function. A **lower AIC indicates a better fit** (a better trade-off
+between fit and complexity); the AIC has no meaning on its own, only
+relative to the AIC of another model.
 
-**Fitted values, sensitivity, specificity, misclassification.** The
-fitted value $\hat{y}$ from a logistic regression is the predicted
-probability that $Y = 1$. To classify crashes, we choose a cut-off and
-predict $Y = 1$ when $\hat{y}$ exceeds it.
+**Fitted values.** Once the model is estimated, the fitted (predicted)
+value $\hat{y}$ for each crash is calculated by plugging the crash's
+predictor values and the estimated coefficients into the logistic form
+of the model:
 
-- *Sensitivity* (true positive rate) = proportion of actual $Y=1$
-  crashes correctly classified. Higher is better.
-- *Specificity* (true negative rate) = proportion of actual $Y=0$
-  crashes correctly classified. Higher is better.
-- *Misclassification rate* = proportion of all crashes classified
-  incorrectly. Lower is better.
+$$\hat{y}_i = \hat{p}_i = \frac{1}{1 + e^{-(\hat{\beta}_0 + \hat{\beta}_1 x_{1i} + \dots + \hat{\beta}_9 x_{9i})}}$$
 
-Because drunk driving is a relatively rare outcome, the conventional 0.5
-cut-off will classify nearly everything as "no alcohol," so we try a
-range of cut-offs to see how the trade-offs change.
+Unlike in OLS, $\hat{y}$ is not a prediction of the outcome itself
+(which can only be 0 or 1). It is the **predicted probability that
+$Y = 1$**, that is, the predicted probability that the crash involved a
+drunk driver, and it always lies between 0 and 1.
 
-**ROC curve and AUC.** The ROC curve plots sensitivity against 1 -
-specificity across all possible cut-offs. The optimal cut-off can be
-chosen by (a) the point closest to the upper-left corner (0, 1), or (b)
-the point maximizing Youden's index (sensitivity + specificity - 1). We
-use the **closest-to-upper-left-corner** method. The area under the
-curve (AUC) is the probability that a randomly chosen crash with a drunk
-driver gets a higher fitted probability than one without. Common
-benchmarks: 0.9-1.0 excellent, 0.8-0.9 good, 0.7-0.8 fair, 0.6-0.7 poor,
-0.5-0.6 failing.
+**Sensitivity, specificity and misclassification rate.** To judge how
+well the model classifies crashes, we choose a **cut-off** value $c$ and
+classify a crash as $\hat{Y} = 1$ if $\hat{y} > c$ and as $\hat{Y} = 0$
+otherwise. Comparing the predicted classes with the actual outcomes gives
+four counts: true positives (TP), false positives (FP), true negatives
+(TN) and false negatives (FN). From these we calculate:
+
+- **Sensitivity** (true positive rate) $= \dfrac{TP}{TP + FN}$: the
+  proportion of crashes that actually involved a drunk driver that the
+  model correctly classifies as such. *Higher values are better.*
+- **Specificity** (true negative rate) $= \dfrac{TN}{TN + FP}$: the
+  proportion of crashes that did not involve a drunk driver that the
+  model correctly classifies as such. *Higher values are better.*
+- **Misclassification rate** $= \dfrac{FP + FN}{TP + FP + TN + FN}$: the
+  proportion of all crashes that the model classifies incorrectly.
+  *Lower values are better.*
+
+**Why try different cut-offs.** The conventional cut-off of 0.5 is not
+appropriate when the outcome is rare. Only about 6% of crashes in our
+data involve a drunk driver, so very few crashes will have a predicted
+probability above 0.5, and the model will classify nearly every crash as
+"no alcohol." This produces high specificity and a low misclassification
+rate, but sensitivity close to zero, so the model would be of little use
+for identifying drunk-driving crashes. Sensitivity and specificity also
+trade off against each other: lowering the cut-off raises sensitivity but
+lowers specificity, and raising it does the opposite. We therefore
+calculate all three measures over a range of cut-offs to see how the
+trade-off changes.
+
+**ROC curve.** The Receiver Operating Characteristic (ROC) curve
+summarizes this trade-off across *all* possible cut-offs. It plots
+sensitivity (the true positive rate) on the vertical axis against
+1 − specificity (the false positive rate) on the horizontal axis. A model
+with no predictive ability falls along the 45-degree diagonal, while a
+better model bows toward the upper-left corner, where sensitivity and
+specificity are both 1. The ROC curve can be used to choose an optimal
+cut-off in two common ways:
+
+1. **Closest to the upper-left corner:** choose the cut-off whose point on
+   the curve has the smallest distance to the point (0, 1), that is, the
+   cut-off that minimizes
+   $\sqrt{(1 - \text{sensitivity})^2 + (1 - \text{specificity})^2}$.
+2. **Youden's index:** choose the cut-off that maximizes
+   $\text{sensitivity} + \text{specificity} - 1$, the point farthest above
+   the diagonal.
+
+Both methods give equal weight to sensitivity and specificity, so unlike
+the misclassification rate they are not dominated by the much larger group
+of crashes without alcohol. In this report we use the
+**closest-to-upper-left-corner** method.
+
+**Area under the curve (AUC).** The area under the ROC curve summarizes
+the model's ability to discriminate between the two outcomes in a single
+number between 0.5 and 1. It can be interpreted as the probability that a
+randomly chosen crash involving a drunk driver has a higher predicted
+probability than a randomly chosen crash that did not. An AUC of 0.5
+means the model is no better than chance, and an AUC of 1 means perfect
+discrimination. Commonly used benchmarks are:
+
+| AUC       | Model quality |
+|:----------|:--------------|
+| 0.9 – 1.0 | Excellent     |
+| 0.8 – 0.9 | Good          |
+| 0.7 – 0.8 | Fair          |
+| 0.6 – 0.7 | Poor          |
+| 0.5 – 0.6 | Failing       |
 
 ## Assumptions
 
-Logistic regression, like OLS, assumes independent observations, no
-severe multicollinearity, no influential outliers, and a correctly
-specified model. Unlike OLS, it does **not** require a linear
-relationship between the predictors and the outcome (only between the
-predictors and the logit), normally distributed residuals, or
-homoscedasticity.
+Logistic regression requires that the dependent variable be binary and
+that the sample be large enough (we use a rule of thumb of at least 50
+observations per predictor). It shares some, but not all, of the other
+assumptions of OLS regression.
+
+**OLS assumptions that also hold for logistic regression:**
+
+- **Independence of observations.** The observations should not be
+  related to one another.
+- **No severe multicollinearity.** The predictors should not be highly
+  correlated with each other.
+- **No highly influential outliers.** A small number of unusual
+  observations should not drive the results.
+- **Correct model specification.** The model should include the relevant
+  predictors and exclude irrelevant ones.
+
+**OLS assumptions that do *not* hold for logistic regression:**
+
+- **A linear relationship between the predictors and the dependent
+  variable.** Logistic regression only requires a linear relationship
+  between the predictors and the *logit* (log odds) of the outcome; the
+  relationship with the probability itself is S-shaped.
+- **Normally distributed residuals.** The errors of a binary outcome
+  cannot be normal.
+- **Homoscedasticity (constant error variance).** The variance of a
+  binary outcome depends on its mean, so it is not constant by
+  construction.
 
 ## Exploratory analyses
 
-Before modeling, we cross-tabulate the dependent variable with each
-binary predictor and test association using the Chi-Square test, with
-$H_0$: the proportion of crashes with the characteristic is the same for
-crashes with and without a drunk driver, versus $H_a$: the proportions
-differ. We compare the means of the continuous predictors (PCTBACHMOR,
-MEDHHINC) across the two levels of the outcome using independent samples
-t-tests, with $H_0$: the group means are equal, versus $H_a$: they
-differ.
+Before running a logistic regression, statisticians typically explore the
+relationship between the dependent variable and each predictor.
+
+**Binary predictors.** We cross-tabulate the dependent variable with each
+binary predictor to see whether the two variables are associated. The
+appropriate statistical test for examining the association between two
+categorical variables is the **Chi-Square test of independence**
+(described in the course notes), which compares the observed cell counts
+in the cross-tabulation with the counts that would be expected if the two
+variables were unrelated. The hypotheses are:
+
+- $H_0$: The two variables are independent; there is no association
+  between the predictor and DRINKING_D (the proportion of crashes with the
+  characteristic is the same for crashes with and without a drunk
+  driver).
+- $H_a$: The two variables are not independent; there is an association
+  between the predictor and DRINKING_D (the proportions differ).
+
+The test statistic is $\chi^2 = \sum \frac{(O - E)^2}{E}$, where $O$ and
+$E$ are the observed and expected counts in each cell, with
+$(r - 1)(c - 1) = 1$ degree of freedom for a 2 × 2 table. We reject $H_0$
+when $p < 0.05$. The test is reliable when all expected counts are at
+least 5. The cross-tabulations also reveal sparse or empty cells, which
+can cause estimation problems such as separation in logistic regression.
+
+**Continuous predictors.** We can also compare the means of the continuous
+predictors for each value of the dependent variable. The appropriate
+tests for examining whether the mean values of PCTBACHMOR and MEDHHINC
+differ between crashes that involved alcohol and those that did not are
+**independent samples t-tests** (described in the course notes). For each
+variable, the hypotheses are:
+
+- $H_0$: $\mu_{\text{alcohol}} = \mu_{\text{no alcohol}}$; the mean of the
+  variable is the same for crashes with and without alcohol involvement.
+- $H_a$: $\mu_{\text{alcohol}} \neq \mu_{\text{no alcohol}}$; the mean
+  differs between the two groups.
 
 # Results
 
