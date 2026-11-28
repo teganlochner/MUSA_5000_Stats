@@ -2,7 +2,7 @@
 title: "The Application of Logistic Regression to Examine the Predictors of Car Crashes Caused by Alcohol"
 subtitle: "CPLN 671 / MUSA 5000: Statistics and Data Mining"
 author: "Sara Cerami, Gautami Kasat, Tegan Lochner"
-date: "November 16, 2026"
+date: "November 28, 2026"
 output:
   html_document:
     toc: true
@@ -32,25 +32,7 @@ editor_options:
     wrap: 72
 ---
 
-## Logistic Regression Data.csv contains the following variables
 
-CRN: Crash Record Number DRINKING_D: Drinking driver indicator (1 = Yes,
-0 = No) COLLISION: Collision category that defines the crash (0 = Non
-collision, 1 = Rear-end, 2 = Head-on, 3 = Rear-to-rear (Backing), 4 =
-Angle, 5 = Sideswipe (same dir.), 6 = Sideswipe (Opposite dir.), 7 = Hit
-fixed object, 8 = Hit pedestrian, 9 = Other or Unknown) FATAL_OR_M:
-Crash resulted in fatality or major injury (1 = Yes, 0 = No) OVERTURNED:
-Crash involved an overturned vehicle (1 = Yes, 0 = No) CELL_PHONE:
-Driver was using cell phone (1= Yes, 0 = No) SPEEDING: Crash involved
-speeding car (1 = Yes, 0 = No) AGGRESSIVE: Crash involved aggressive
-driving (1 = Yes, 0 = No) DRIVER1617: Crash involved at least one driver
-who was 16 or 17 years old (1 = Yes, 0 = No) DRIVER65PLUS: Crash
-involved at least one driver who was at least 65 years old (1 = Yes, 0 =
-No) AREAKEY: ID of the Census Block Group where the crash took place
-PCTBACHMOR: % of individuals 25 years of age or older who have at least
-a bachelor’s degree in the Census Block Group where the crash took place
-MEDHHINC: Median household income in the Census Block Group where the
-crash took place
 
 ```{r setup, include=FALSE}
 # Install once from the console, not while knitting:
@@ -89,25 +71,46 @@ bin_labels <- c(
 
 # Introduction
 
-According to the US Department of Transportation, almost 30 people a day
-die in motor vehicle crashes that involve an alcohol-impaired driver,
-and the economic cost of alcohol-related crashes exceeds \$59 billion
-annually. Understanding which crash characteristics and neighborhood
-contexts are associated with drunk driving can help cities target
-enforcement, education and street-design interventions. This analysis
-uses all 53,260 crashes reported in Philadelphia from 2008 to 2012
-(PennDOT, via OpenDataPhilly), restricted to the 43,364 crashes that
-occurred in residential block groups.
+Drunk driving is one of the most preventable causes of death on American
+roads. According to the US Department of Transportation, almost 30
+people a day, or roughly one person every 51 minutes, die in motor
+vehicle crashes that involve an alcohol-impaired driver, and many more
+are injured. The National Highway Traffic Safety Administration
+estimates that alcohol-related crashes cost the country more than \$59
+billion each year. For a city, knowing how often these crashes happen is
+only part of the picture. Knowing what they look like, and where they
+occur, is what allows enforcement, education campaigns and street design
+changes to be aimed where they will do the most good. This report
+focuses on Philadelphia, using all 53,260 crashes recorded by the
+Pennsylvania Department of Transportation between 2008 and 2012 and
+published on OpenDataPhilly. Each crash was spatially joined to the 2000
+Census block group in which it occurred. After removing the 9,896
+crashes that took place in non-residential block groups, the analysis
+covers the 43,364 crashes that occurred in the city's residential
+neighborhoods.
 
-[Speculate on why each predictor might be associated with drunk driving.
-For example, speeding and aggressive driving reflect impaired judgment;
-fatal/major-injury crashes and overturned vehicles reflect crash
-severity; very young and older drivers may be less likely to drive
-drunk; and block-group education and income may proxy for neighborhood
-nightlife, alcohol availability or enforcement patterns.]
-
-We use R to run a logistic regression of the binary outcome DRINKING_D
-on nine crash-level and neighborhood-level predictors.
+We examine nine possible predictors of whether a crash involved a
+drinking driver. Most describe the crash itself. Alcohol slows reaction
+time and weakens judgment, so we expect speeding and aggressive driving
+to be more common in drunk-driving crashes, and we expect those crashes
+to be more severe, more often ending in a fatality, a major injury or an
+overturned vehicle. Cell phone use is a different kind of distraction,
+and we see no clear reason why it should go hand in hand with drinking.
+Two predictors capture driver age. Crashes involving 16- or 17-year-olds
+should be less likely to involve alcohol, since these drivers are well
+below the legal drinking age and Pennsylvania's junior license limits
+late-night driving. Crashes involving drivers aged 65 or older should
+also be less likely to involve alcohol, since older adults tend to drive
+less at night and drink less heavily. The last two predictors describe
+the neighborhood where the crash happened: the share of adults with at
+least a bachelor's degree and the median household income. Their
+direction is harder to predict. Wealthier, more educated block groups
+may have more bars and restaurants and residents with more money to
+spend on nights out, but they may also see less of the late-night
+traffic in which drunk-driving crashes tend to occur. To test these
+relationships, we first explore how each predictor relates to drunk
+driving and then use R to run a logistic regression of the binary
+outcome, DRINKING_D, on all nine predictors.
 
 # Methods
 
@@ -499,11 +502,9 @@ dep_tab <- tibble(
 )
 ```
 
-**Dependent variable.** Of the `r format(nrow(df), big.mark=",")`
-crashes, `r DRINKING_D.tab["1"]`
-(`r round(100*DRINKING_D.prop["1"], 2)`%) involved a drunk driver.
+### Dependent variable
 
-Sara: The tabulation of the dependent variable below shows that of
+The tabulation of the dependent variable below shows that of
 crashes in the sample (43,364), 40,879 or 94.27% were reported as no
 alcohol involved while 2,485 or 5.73% were reported as alcohol involved.
 Because the percentage of alcohol involved crashes fall between 5% and
@@ -517,26 +518,24 @@ kable(dep_tab, caption = "Tabulation of DRINKING_D", booktabs = TRUE) %>%
   kable_styling(latex_options = "HOLD_position", full_width = FALSE)
 ```
 
-**Cross-tabulations and Chi-Square tests.** The table below gives, for
-each binary predictor, the number and percentage of crashes without and
-with alcohol involved.
+### Cross-tabulations and Chi-Square tests
 
-Six of the seven binary variables, the p-value \< .001, so we reject the
-null hypothesis that all predictors have no association with the
-dependent variable. The cross-tabulation of the dependent variable with
-each binary predictor demonstrates that crashes involving a drunk driver
-were considerably more likely to result in a fatality or major injury
-(7.57% drunk vs. 2.89% not drunk), to involve an overturned vehicle
-(4.43% drunk vs. 1.50% not drunk), and to involve speeding (10.46% drunk
-vs. 3.08% not drunk). Speeding shows the strongest association (2 =
-376.78), being more than three times as common in alcohol-related
-crashes. Conversely, aggressive driving (36.86% drunk vs. 45.31% not
-drunk), drivers aged 16 or 17 (0.48% drunk vs. 1.65% not drunk), and
-drivers aged 65 or older (4.79% drunk vs. 10.36% not drunk) were all
-less common in crashes involving a drunk driver. We would like to note
-that only 12 alcohol-related crashes involved a 16- or 17-year-old
-driver, so estimates for DRIVER1617 may be imprecise because the sample
-is so small.
+For six of the seven binary predictors, the p-value is \< .001, so we
+reject the null hypothesis of no association between each of these
+predictors and the dependent variable. The cross-tabulation of the
+dependent variable with each binary predictor demonstrates that crashes
+involving a drunk driver were considerably more likely to result in a
+fatality or major injury (7.57% drunk vs. 2.89% not drunk), to involve
+an overturned vehicle (4.43% drunk vs. 1.50% not drunk), and to involve
+speeding (10.46% drunk vs. 3.08% not drunk). Speeding shows the
+strongest association ($\chi^2$ = 376.78), being more than three times
+as common in alcohol-related crashes. Conversely, aggressive driving
+(36.86% drunk vs. 45.31% not drunk), drivers aged 16 or 17 (0.48% drunk
+vs. 1.65% not drunk), and drivers aged 65 or older (4.79% drunk vs.
+10.36% not drunk) were all less common in crashes involving a drunk
+driver. We would like to note that only 12 alcohol-related crashes
+involved a 16- or 17-year-old driver, so estimates for DRIVER1617 may be
+imprecise because the sample is so small.
 
 ```{r crosstab-full}
 # Full CrossTable output (for reference; shown only in the HTML code-folded view)
@@ -570,20 +569,18 @@ tbl_cross <- kable(crosstab_tbl, booktabs = TRUE, align = "lrrrrrrrr",
 tbl_cross
 ```
 
-Sara: For each binary predictor, the Chi-square test’s null hypothesis
+For each binary predictor, the Chi-square test’s null hypothesis
 is that the dependent variable is independent from each predictor. The
 alternative is that they are associated. The Chi-Square test shows a
 significant association between DRINKING_D and every binary predictor
 except CELL_PHONE (χ² = 0.16, p = 0.687). For CELL_PHONE, p \> 0.05, so
 we fail to reject the null hypothesis.
 
-**Continuous predictors and t-tests.** The table below compares
-block-group education and income for crashes with and without alcohol
-involvement.
+### Continuous predictors and t-tests
 
-Sara: The mean for PCTBACHMOR in drunk driving crashes is 16.61%, while
+The mean for PCTBACHMOR in drunk driving crashes is 16.61%, while
 the mean for crashes not involving alcohol is 16.57%. The mean for
-MEDHHINC in drunk driving crashes is \$31,930.10, while the mean for
+MEDHHINC in drunk driving crashes is \$31,998.75, while the mean for
 crashes not involving alcohol is \$31,483.05.
 
 ```{r ttests}
@@ -612,14 +609,12 @@ kable(ttest_tbl, booktabs = TRUE, format.args = list(big.mark = ","),
   add_header_above(c(" " = 1, "No Alcohol" = 2, "Alcohol" = 2, "t-test" = 3))
 ```
 
-Sara: For both PCTBACHMOR (t = -.11, p = .914) and MEDHHINC (t = -1.41,
+For both PCTBACHMOR (t = -.11, p = .914) and MEDHHINC (t = -1.41,
 p = .160), p \> 0.05, so we fail to reject the null hypothesis that the
 group means are equal. There is no significant difference in block-group
 education or income between crashes with and without a drunk driver.
 
 ## Logistic regression assumptions and multicollinearity
-
-Sara:
 
 **Assumptions**
 
@@ -643,7 +638,7 @@ kable(round(cor_mat, 2), booktabs = TRUE,
   kable_styling(latex_options = c("HOLD_position", "scale_down"), font_size = 8)
 ```
 
-Sara: **Multicollinearity.** The matrix showing the pairwise Pearson
+**Multicollinearity.** The matrix showing the pairwise Pearson
 correlations is illustrated above. The Pearson correlation was designed
 for continuous variables, so it has limitations when applied to binary
 variables. Two binary variables can only have a correlation of 1 if they
@@ -653,25 +648,14 @@ variables are perfectly related. As a result, Pearson correlations can
 understate the strength of the association between binary predictors,
 especially rare ones. We used a \|.8\| Pearson correlation threshold for
 determining multicollinearity. No pair of predictors exceeds this
-threshold, so there is no evidence of severe multicollinearity
+threshold, so there is no evidence of severe multicollinearity. The
+strongest correlations are between PCTBACHMOR and MEDHHINC (r = 0.48)
+and between SPEEDING and AGGRESSIVE (r = 0.21).
 
 ```{r corrplot, fig.cap="Correlation plot of predictors", fig.height=6}
 corrplot(cor_mat, method = "color", type = "upper", tl.col = "black",
          tl.cex = 0.8, addCoef.col = "black", number.cex = 0.6)
 ```
-
-<<<<<<< HEAD
-We define severe multicollinearity as pairwise correlations above
-roughly \|0.8\|. [State whether any pair exceeds this threshold. Likely
-note that PCTBACHMOR and MEDHHINC are the most strongly correlated pair,
-and that Pearson correlations between binary variables (phi
-coefficients) are limited because they are bounded by the marginal
-distributions of the variables, especially when one category is rare.]
-[Comment on which other assumptions are met or violated, such as
-independence of crashes within the same block group.]
-=======
-**Multicollinearity.** We define severe multicollinearity as pairwise correlations above roughly |0.7|. [State whether any pair exceeds this threshold. Likely note that PCTBACHMOR and MEDHHINC are the most strongly correlated pair, and that Pearson correlations between binary variables (phi coefficients) are limited because they are bounded by the marginal distributions of the variables, especially when one category is rare.] [Comment on which other assumptions are met or violated, such as independence of crashes within the same block group.]
->>>>>>> 6c2ca16f0b190dada9dce9c622ba9ddf4d02e627
 
 ## Logistic regression: full model
 
@@ -701,16 +685,13 @@ or_table <- function(model) {
 or1 <- or_table(mylogit1)
 ```
 
-**Model results.** The table below merges coefficients, p-values, odds
-ratios and 95% confidence intervals.
-
 ```{r logit-full-table}
 kable(or1, digits = 4, booktabs = TRUE,
       caption = "Logistic regression results: full model (odds ratios and 95% CIs)") %>%
   kable_styling(latex_options = c("HOLD_position", "scale_down"), font_size = 9)
 ```
 
-Sara: Seven of the nine predictors are statistically significant at the
+Seven of the nine predictors are statistically significant at the
 0.05 level; CELL_PHONE (*p* = 0.881) and PCTBACHMOR (*p* = 0.775) are
 not. Holding all other predictors constant:
 
@@ -746,6 +727,26 @@ only appears after controlling for the other crash characteristics.
 
 ## Classification: sensitivity, specificity and misclassification
 
+The table below presents the sensitivity, specificity, and
+misclassification rate of the full model at each probability cut-off. A
+crash is classified as involving a drunk driver when its predicted
+probability is above the cut-off. Sensitivity is the proportion of
+drunk-driving crashes correctly classified, specificity is the
+proportion of non-drunk-driving crashes correctly classified, and the
+misclassification rate is the proportion of all crashes classified
+incorrectly. The table shows the tradeoff between sensitivity and
+specificity because as one goes up, the other goes down and vice versa.
+At low cut-offs, almost every crash is classified as involving a drunk
+driver: at a cut-off of 0.02, sensitivity is 0.98 but specificity is
+only 0.06. As the cut-off increases, fewer crashes are classified as
+involving a drunk driver, so specificity rises and sensitivity falls. At
+a cut-off of 0.50, specificity is nearly perfect (0.9999), but
+sensitivity is close to zero (0.0016), meaning the model identifies
+almost none of the drunk-driving crashes. The largest change occurs
+between cut-offs of 0.05 and 0.07, where sensitivity drops from 0.73 to
+0.22 and specificity rises from 0.47 to 0.91.
+
+
 ```{r cutoffs}
 fit1 <- fitted(mylogit1)
 y <- df$DRINKING_D
@@ -770,25 +771,6 @@ kable(cut_tbl, digits = 4, booktabs = TRUE,
   row_spec(best_row, bold = TRUE, background = "#FFF2CC")
 ```
 
-Sara: The table below presents the sensitivity, specificity, and
-misclassification rate of the full model at each probability cut-off. A
-crash is classified as involving a drunk driver when its predicted
-probability is above the cut-off. Sensitivity is the proportion of
-drunk-driving crashes correctly classified, specificity is the
-proportion of non-drunk-driving crashes correctly classified, and the
-misclassification rate is the proportion of all crashes classified
-incorrectly. The tables shows the tradeoff between sensitivity and
-specificity because as one goes up, the other goes down and vice versa.
-At low cut-offs, almost every crash is classified as involving a drunk
-driver: at a cut-off of 0.02, sensitivity is 0.98 but specificity is
-only 0.06. As the cut-off increases, fewer crashes are classified as
-involving a drunk driver, so specificity rises and sensitivity falls. At
-a cut-off of 0.50, specificity is nearly perfect (0.9999), but
-sensitivity is close to zero (0.0016), meaning the model identifies
-almost none of the drunk-driving crashes. The largest change occurs
-between cut-offs of 0.05 and 0.07, where sensitivity drops from 0.73 to
-0.22 and specificity rises from 0.47 to 0.91.
-
 The highest misclassification rate (.8889) occurs at a threshold of .02,
 and the lowest (.0573) occurs at a threshold of .5. The
 misclassification rate at .5, however, is misleading because only 5.73%
@@ -802,6 +784,7 @@ selects a much lower cut-off that identifies far more drunk-driving
 crashes, at the cost of more false positives. Because the goal is to
 identify drunk-driving crashes, the ROC-based cut-off is more useful.
 
+
 ## ROC curve and AUC
 
 ```{r roc}
@@ -810,38 +793,33 @@ best_coords <- coords(roc1, "best", best.method = "closest.topleft",
                       ret = c("threshold", "sensitivity", "specificity"))
 auc1 <- auc(roc1)
 
-# Store the figure as an object-like function and print it below
+# Store the figure as a function and print it below
 roc_plot <- function() {
-  plot(roc1, print.auc = FALSE, legacy.axes = TRUE, col = "steelblue", lwd = 2,
+  plot(roc1, print.auc = TRUE, legacy.axes = TRUE, col = "steelblue", lwd = 2,
        xlab = "1 - Specificity (False Positive Rate)",
        ylab = "Sensitivity (True Positive Rate)")
-  points(1 - best_coords$specificity, best_coords$sensitivity, pch = 19, col = "red", cex = 1.5)
-  text(1 - best_coords$specificity + 0.02, best_coords$sensitivity - 0.04,
+  points(best_coords$specificity, best_coords$sensitivity, pch = 19, col = "red", cex = 1.5)
+  text(best_coords$specificity - 0.02, best_coords$sensitivity - 0.04,
        labels = paste0("Cut-off = ", round(best_coords$threshold, 4)),
        adj = 0, cex = 0.9)
 }
 
 png("roc_curve.png", width = 1600, height = 1400, res = 250)
 roc_plot()
-dev.off()
+invisible(dev.off())
 ```
 
 ```{r roc-print, fig.cap="ROC curve for the full model; the red point marks the cut-off closest to the upper left corner"}
 roc_plot()
 ```
 
-Sara: The optimal cut-off was selected as the point on the ROC curve
+The optimal cut-off was selected as the point on the ROC curve
 with the minimum distance from the upper left corner (0, 1), where
 sensitivity and specificity both equal 1. This distance is
-(1-sensitivity)2+(1-specificity)2, and it was computed using the
-closest.topleft method in the pROC package. The optimal cut-off is
-.0636, with sensitivity of 0.6644 and specificity of 0.5404. In other
-words, there is about a 64% chance that the model assigns a higher
-predicted probability to a randomly selected drunk-driving crash than to
-a randomly selected crash without a drunk driver. This suggests that the
-predictors in our model, while statistically significant, do a weak job
-of distinguishing between crashes with and without drunk drivers,
-possibly because other critical factors are not included in the model.
+$\sqrt{(1-\text{sensitivity})^2 + (1-\text{specificity})^2}$, and it was
+computed using the closest.topleft method in the pROC package. The
+optimal cut-off is .0636, with sensitivity of 0.6608 and specificity of
+0.5452.
 
 The optimal cut-off selected by minimizing the distance from the
 upper-left corner of the ROC curve is very different from the cut-off
@@ -878,11 +856,17 @@ that a randomly selected crash involving a drunk driver has a higher
 predicted probability than a randomly selected crash that did not. An
 AUC of 0.5 means the model is no better than chance, and 1.0 means
 perfect discrimination. Based on the benchmarks in the Methods section,
-an AUC of .6399 indicates poor or weak predictive accuracy.
+an AUC of .6399 indicates poor or weak predictive accuracy. In other
+words, there is about a 64% chance that the model assigns a higher
+predicted probability to a randomly selected drunk-driving crash than to
+a randomly selected crash without a drunk driver. This suggests that the
+predictors in our model, while statistically significant, do a weak job
+of distinguishing between crashes with and without drunk drivers,
+possibly because other critical factors are not included in the model.
 
 ## Logistic regression: binary predictors only
 
-Sara: The table below presents the results of the logistic regression
+The table below presents the results of the logistic regression
 with only the seven binary predictors, excluding PCTBACHMOR and
 MEDHHINC.
 
@@ -891,7 +875,7 @@ mylogit2 <- glm(DRINKING_D ~ FATAL_OR_M + OVERTURNED + CELL_PHONE + SPEEDING +
                   AGGRESSIVE + DRIVER1617 + DRIVER65PLUS,
                 family = binomial(link = "logit"), data = df)
 
-summary(mylogit2)
+summary2 <- summary(mylogit2)
 or2 <- or_table(mylogit2)
 
 kable(or2, digits = 4, booktabs = TRUE,
@@ -899,7 +883,7 @@ kable(or2, digits = 4, booktabs = TRUE,
   kable_styling(latex_options = c("HOLD_position", "scale_down"), font_size = 9)
 ```
 
-Sara: The results are very similar to those of the full model. The same
+The results are very similar to those of the full model. The same
 six binary predictors remain statistically significant (p \< 0.001):
 FATAL_OR_M, OVERTURNED, SPEEDING, AGGRESSIVE, DRIVER1617 and
 DRIVER65PLUS. CELL_PHONE remains not significant (p = .8752). The
@@ -918,43 +902,67 @@ kable(aic_tbl, digits = 1, booktabs = TRUE, caption = "AIC comparison") %>%
   kable_styling(latex_options = "HOLD_position", full_width = FALSE)
 ```
 
-Sara: The full model has an AIC of 18359.6 vs the binary predictor-only
+The full model has an AIC of 18359.6 vs the binary predictor-only
 model, which has an AIC of 18360.5. Because a lower AIC indicates a
 better balance between model fit and complexity, the full model is
 technically the better model. However, the difference (0.9) is very
 small. Differences of less than 2 are generally considered negligible,
 so the two models perform about equally well. This is consistent with
-the regression results that only MEDHHINC is significant (p = 0.037),
-and it adds little to the model's explanatory power.
-
-**Model comparison.** [Note any predictors whose significance changed
-between the two models. Report the AICs: the model with the lower AIC
-(`r rownames(aic_tbl)[which.min(aic_tbl$AIC)]`) is the better model.]
+the full model results, where MEDHHINC is the only one of the two
+dropped variables that is significant (p = 0.037), and it adds little
+to the model's explanatory power.
 
 # Discussion
 
-[Recap: what you did and the main findings. Which variables are strong
-predictors of alcohol-related crashes, and which are not associated with
-the outcome?]
+In this report, we used logistic regression to examine which crash and
+neighborhood characteristics are associated with drunk driving among the
+43,364 crashes that occurred in Philadelphia's residential block groups
+between 2008 and 2012. Speeding was the strongest predictor: crashes
+involving a speeding car had 4.66 times the odds of involving a drunk
+driver, holding the other predictors constant. Crashes involving an
+overturned vehicle (OR = 2.53) or resulting in a fatality or major
+injury (OR = 2.26) were also more likely to involve alcohol, while
+crashes involving aggressive driving (OR = 0.55), a driver aged 65 or
+older (OR = 0.46) or a 16- or 17-year-old driver (OR = 0.28) were less
+likely to. Cell phone use and the percent of block-group residents with
+a bachelor's degree were not associated with drunk driving, and median
+household income, although significant, had a very small effect (about
+a 0.3% increase in the odds per \$1,000). Most of these results are in
+the direction we expected. Speeding and crash severity are positively
+associated with drunk driving, the youngest and oldest drivers are less
+likely to be involved, and cell phone use, which we saw as a separate
+form of distraction, is unrelated. The surprising result is aggressive
+driving, which we expected to be more common in drunk-driving crashes
+but which instead lowers the odds by 45%, both in the cross-tabulation
+and in the regression. One possible explanation is that aggressive
+driving, such as tailgating or running red lights, is common in
+congested daytime traffic, while drunk-driving crashes tend to happen at
+night. It is also possible that when a driver is impaired, police record
+alcohol rather than aggressive driving as the main factor in the crash.
 
-[Are the results surprising? Do the significant predictors have the
-signs you expected?]
-
-**Is logistic regression appropriate?** Only `r DRINKING_D.tab["1"]`
-crashes (`r round(100*DRINKING_D.prop["1"], 2)`%) involve a drunk
-driver. [Discuss whether this is rare enough that Allison's rare-events
-methods (e.g., Firth's penalized likelihood or prior correction) would
-be needed. A common rule of thumb is that rare-events problems arise
-when there are few events in absolute terms, such as fewer than about 10
-events per predictor, or when the event proportion is well below 5%.
-With roughly 2,400 events and 9 predictors, standard logistic regression
-is probably adequate here, though coefficient and intercept estimates
-should be interpreted with the low base rate in mind.]
-
-**Limitations.** [Ideas: crash-level outcome tied to block-group-level
-predictors (ecological fallacy, and crashes in the same block group are
-not independent); alcohol involvement may be under-reported; the 9,896
-non-residential crashes were excluded; 2000 Census data are old relative
-to the crash years; no information on time of day, day of week or
-location type, which are strongly tied to drunk driving; spatial
-autocorrelation is ignored; cross-sectional data cannot show causation.]
+Only 2,485 crashes (5.73%) involved a drunk driver, so the outcome is
+relatively rare. However, Paul Allison argues that the problem with rare
+events is not a low percentage of events but a small number of events
+in absolute terms, which can bias maximum likelihood estimates. With
+2,485 events, or about 276 per predictor, our sample is large enough for
+standard logistic regression, and rare-events methods such as Firth's
+penalized likelihood are unlikely to change our results. The one
+exception is DRIVER1617, since only 12 alcohol-related crashes involved
+a 16- or 17-year-old driver, so its estimate should be read with
+caution. The analysis also has several other limitations. The AUC of
+0.64 shows that the model distinguishes poorly between crashes with and
+without a drunk driver, likely because it leaves out factors that are
+strongly tied to drinking, such as time of day, day of week and
+proximity to bars. The neighborhood predictors come from the 2000
+Census, several years before the crashes took place, and they describe
+the block group where the crash happened rather than where the driver
+lives or was drinking. Because crashes in the same block group share
+the same PCTBACHMOR and MEDHHINC values, the observations are not fully
+independent, and spatial autocorrelation is not accounted for. Alcohol
+involvement is reported by police and is likely under-reported, and
+excluding the 9,896 crashes in non-residential block groups may leave
+out commercial areas where nightlife, and drunk driving, are
+concentrated. Finally, FATAL_OR_M and OVERTURNED describe the outcome
+of a crash rather than its cause, and because the data are
+cross-sectional, all of the relationships reported here are
+associations, not causal effects.
